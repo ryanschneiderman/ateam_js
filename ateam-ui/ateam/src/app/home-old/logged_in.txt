@@ -1,0 +1,99 @@
+// export default async function Page() {
+//     return (
+//       <main>
+//         <div className="home page-template-default page page-id-3166 nectar-auto-lightbox ascend wpb-js-composer js-comp-ver-5.7 vc_responsive" data-footer-reveal="1" data-footer-reveal-shadow="small" data-header-format="centered-menu" data-body-border="off" data-boxed-style="" data-header-breakpoint="1000" data-dropdown-style="classic" data-cae="linear" data-cad="650" data-megamenu-width="contained" data-aie="none" data-ls="magnific" data-apte="standard" data-hhun="0" data-fancy-form-rcs="default" data-form-style="default" data-form-submit="default" data-is="minimal" data-button-style="default" data-header-inherit-rc="false" data-header-search="false" data-animated-anchors="true" data-ajax-transitions="true" data-full-width-header="true" data-slide-out-widget-area="true" data-slide-out-widget-area-style="fullscreen" data-user-set-ocm="1" data-loading-animation="none" data-bg-header="true" data-responsive="1" data-ext-responsive="true" data-header-resize="1" data-header-color="light" data-cart="false" data-remove-m-parallax="" data-remove-m-video-bgs="" data-force-header-trans-color="light" data-smooth-scrolling="0" data-permanent-transparent="false">
+//             <div id="header-space" data-header-mobile-fixed='1'></div> 
+//             <div id="header-outer"  data-has-menu="true" data-has-buttons="yes" data-using-pr-menu="false" data-mobile-fixed="1" data-ptnm="false" data-lhe="animated_underline" data-user-set-bg="#ffffff" data-format="centered-menu" data-permanent-transparent="false" data-megamenu-rt="0" data-remove-fixed="0" data-header-resize="1" data-cart="false" data-transparency-option="" data-box-shadow="small" data-shrink-num="6" data-full-width="true" data-condense="false" data-using-secondary="0" data-using-logo="1" data-logo-height="45" data-m-logo-height="24" data-padding="32" data-transparent-header="true" data-transparent-shadow-helper="false" data-remove-border="true" className="transparent">
+//             <header id="top">
+//                 <div className="container">
+//                     <div className="row">
+//                     <div className="col span_3">
+//                         {/* TODO: add wrapper link to homepage */}
+//                         {/* TODO: add images */}
+//                         {/* <img className="stnd default-logo" alt="ATeam" src="<%= asset_path 'logo-grey.png' %>" srcset="<%= asset_path 'logo-grey.png' %> 1x,<%= asset_path 'logo-grey.png' %> 2x" />
+//                         <img className="starting-logo default-logo"  alt="ATeam" src="<%= asset_path 'logo-white.png' %>" srcset="<%= asset_path 'logo-white.png' %> 1x, <%= asset_path 'logo-white.png' %> 2x" />
+//                         <img className="starting-logo dark-version default-logo"  alt="ATeam" src="<%= asset_path 'logo-grey.png' %>" srcset="<%= asset_path 'logo-grey.png' %> 1x, <%= asset_path 'logo-grey.png' %> 2x" />  */}
+//                     </div>
+//                     <div className="col span_9 col_last">
+//                             <div className="slide-out-widget-area-toggle mobile-icon fullscreen" data-icon-animation="simple-transform">
+//                         <div> <a href="#sidewidgetarea" className="closed"> <span> <i className="lines-button x2"> <i className="lines"></i> </i> </span> </a> </div> 
+//                     </div>
+                    
+//                     <div className="col span_9 col_last">
+//                         <nav>
+//                             <ul className="buttons" data-user-set-ocm="1" id = "header-buttons">
+//                                 <li className="button_login button_logged_in " id = "create-team-button">
+//                                     {/* TODO: link to new team path */}
+//                                     {/* TODO: onclick?? create_team()? */}
+//                                     <button className = "portal-button portal-button-1">Purchase Team</button>
+//                                 </li>	
+//                                 <li className="button_login button_logged_in " id = "join-team-button">
+//                                     <a>
+//                                         {/* TODO: onclick?? join_team_modal? */}
+//                                         <button className = "portal-button portal-button-2">Join Team</button>
+//                                     </a>
+//                                 </li>
+
+//                                 <li className = "player-dropdown">
+//                                     <div className = "flex-row center-aligned dropdown header-right-container" id = "user-dropdown">
+//                                     {/* TODO: onclick?? user_dropdown */}   
+//                                         <button className = "season-dropdown-container flex-row center-aligned">
+//                                             <div className = "player-dropdown-text">current_user.first_name</div>
+//                                             {/* TODO: dropdown arrow */}
+//                                             {/* TODO: dropdown arrow (dark) */}
+//                                         </button>
+//                                         <div>
+//                                             <div className = "header-sub-menu" id = "user-dropdown-sub-menu">
+//                                             {/* TODO: edit user registration */}
+//                                                 <div className = "header-sub-menu-item">Edit Profile  </div>
+//                                             {/* TODO: destroy user session */}
+//                                                 <div className = "header-sub-menu-item"> Log Out  </div>
+                                            
+//                                             </div>
+//                                         </div>
+//                                     </div> 
+//                                     {/* TODO: onclick show_user_dropdown */}
+//                  					<button className = "player-dropdown-wrapper flex-row center-aligned">
+//                                         <div className = "player-dropdown-text" >current_user.firstname</div> 
+//                                         {/* TODO: dropdown arrow */}
+//                                         {/* TODO: dropdown arrow (dark) */}
+//                                     </button> 
+//                                 </li>
+//                  				<div className = "toolbar-dropdown" id = "user-dropdown-content" style={{display: 'none', position: 'fixed'}}>
+//                                 <div id = "user-dropdown-container"></div>
+//                                 <div id = "user-dropdown-wrapper" className = "toolbar-no-close">
+//                                     <div className = "dropdown-action" id = "user-dropdown-container">
+//                                     {/* TODO */}
+//                                     {/* <%= link_to 'Edit Profile', edit_user_registration_path %> */}
+//                                     </div>
+//                                     <div className = "dropdown-action" id = "user-dropdown-container">
+//                                     {/* TODO */}
+//                                     {/* <%= link_to 'Log out', destroy_user_session_path, method: :delete %> */}
+//                                     </div>
+//                                 </div>
+//                                 </div>
+                            
+//                             </ul>
+//                             <ul className="sf-menu">	
+//                                 <li id="menu-item-8559" className="menu-item menu-item-type-post_type menu-item-object-page menu-item-home current-menu-item page_item page-item-3166 current_page_item menu-item-8559"><%= link_to 'Home', root_path %>
+//                                 </li>
+//                                 <li id="menu-item-9626" className="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-9626"><%= link_to 'Product', product_path %> 
+//                                 </li>
+//                                 <li id="menu-item-9627" className="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-9627"><%= link_to 'Demos', demos_path %> 
+//                                 </li>
+//                 <!-- 				<li id="menu-item-9626" className="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-9626"><%= link_to 'About', about_path %> 
+//                                 </li> -->
+                                
+//                             </ul>	   
+//                         </nav>		
+//                     </div><!--/span_9-->
+
+                        
+//                     </div><!--/row-->
+//                 </div><!--/container-->
+//                 </header>
+//             </div>
+//         </div>
+//       </main>
+//     );
+//   }

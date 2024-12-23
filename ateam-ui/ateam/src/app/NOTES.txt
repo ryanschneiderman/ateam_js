@@ -1,0 +1,33 @@
+
+******************************* IMPORTANT! If bgImage is not an array that means it is an image ********************
+
+imgsToDraw = particleImages
+
+ParticleImage is analagous to "shape" in old file
+
+DEBUGGING THIS WILL BE THE HARDEST PART!! DON"T GET DISCOURAGED IF THERE ARE TONS OF ERRORS/IT TAKES AWHILE TO DEBUG. THAT IS TO BE EXPECTED
+
+
+Ok, so the next step is walking through everything, and trying to get to the best point to where I feel confident that the flow is sound, and the
+React-y side of things is correct.
+
+First things first, look at all of the TODOs you have, and see if any of them should be addressed before doing anything else.
+
+Loaded logic??
+
+Need to figure out index logic.
+
+Once you are confident that all of the TODOs are not urgent, start looking at the flow
+
+
+OK. IT IS MOSTLY WORKING NOW. Sweet. What are the next steps. 
+
+Remaining items:
+
+- Get the text working.
+- Fine tune. 
+- Integrate into rest of front page environment.
+
+
+First thing I want to do is go through all of the currently commented out code. See if we can get to a place
+where everything is uncommented, and then move through the remaining items. 

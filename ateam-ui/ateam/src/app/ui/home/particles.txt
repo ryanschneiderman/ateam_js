@@ -1,0 +1,1422 @@
+import { useRef, useEffect, useState } from "react";
+import { MouseState } from "./types";
+
+export default function Particles() {
+    // TODO: currently these values are all the same, but they could be different for different shapes?
+    // Start with just 1
+
+    const [canvasBgColor, setCanvasBgColor] = useState("#fefefe"); // Initial color
+    const [currentShapeIndex, setCurrentShapeIndex] = useState(0); // Initial shape index
+    const [mouse, setMouseLocation] = useState<MouseState>({
+        x: window.innerWidth * 2,
+        y: window.innerHeight * 2,
+    });
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
+    const [animation, setAnimation] = useState();
+    const [animationId, setAnimationId] = useState<number>(0);
+
+    const [bgCanvas, setBgCanvas] = useState<HTMLCanvasElement>();
+    //
+    const [bgContext, setBgContext] = useState<CanvasRenderingContext2D>();
+    const [bgContextPixelData, setBgContextPixelData] = useState<ImageData>();
+    const [now, setNow] = useState<number | null>(null);
+    const [elapsed, setElapsed] = useState<number>(0);
+    const [then, setThen] = useState<number>(Date.now());
+    // TODO: this could potentially be a constant
+    const [rotateTimer, setRotateTimer] = useState<number>(5500);
+    const [loaded, setLoaded] = useState<boolean>(false);
+    const [prevShapeIndex, setPrevShapeIndex] = useState<number>(0);
+    const [decMultiplier, setDecMultiplier] = useState<number>(0.02);
+    const [reactionSensitivity, setReactionSensitivity] = useState<number>(3);
+    const [randomMovement, setRandomMovement] = useState<boolean>(false);
+    const [fpsDec, setFpsDec] = useState<number>(0.13);
+    const [fps, setFps] = useState<number>(43);
+    const [impulsX, setImpulsX] = useState<number>(Math.random() * 600 - 300);
+    const [impulsY, setImpulsY] = useState<number>(-Math.random() * 300);
+    const [onMobile, setOnMobile] = useState<boolean>(false);
+    const [currentSequenceIndex, setCurrentSequenceIndex] = useState<number>(0);
+    const [loadedCount, setLoadedCount] = useState<number>(0);
+    const [disableExplosion, setDisableExplosion] = useState<string>("off");
+
+    // const [timeoutHolder, setTimeoutHolder] = useState<(() => void) | null>(null);
+
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Shape settings
+    const shapes = [
+        {
+            shape: "/images/Basketball-Rev5.png",
+            colorMapping: "original",
+            color: "#fefefe",
+            backgroundColor: "transparent",
+            colorAlpha: "original",
+            density: 14,
+            densityOriginal: 14,
+            maxParticleSize: 3,
+            maxParticleSizeOriginal: 3,
+        },
+    ];
+
+    // Global settings
+    const drawDistance = 28;
+    const maxLineThickness = 4;
+    // const reactionSensitivity = 3;
+    const lineThickness = 1;
+    const points = [];
+    // const mouse =  { x: window.innerWidth*2, y: window.innerHeight*2, down: false };
+    // const animation = null;
+    // const randomMovement =  false;
+
+    const imgsToDraw = shapes;
+    // TODO: this could be bad practice. revisit. It is a variable for a function.
+    const timeoutHolder = useRef<NodeJS.Timeout | null>(null);
+    const totalImgCount = 0;
+    // const loaded = false;
+    // const loadedCount = 0;
+    const imageInput = null;
+    const bgImage = [];
+
+    const explodeChance = true;
+    // const currentSequenceIndex = 0;
+    // const prevShapeIndex = 0;
+    const sequenceActive = false;
+    // const decMultiplier = 0.02;
+    // const bgCanvas = null;
+    // const bgContext = null;
+    // const bgContextPixelData = null;
+    // TODO: check if bool
+    // const disableExplosion = "off";
+    // const rotateTimer = 5500;
+    const regularAnimation = true;
+    const textPosition = "middle";
+    const textPositionH = "center";
+    // const fps = 43;
+    // const fpsDec = 0.13;
+    // const then = Date.now();
+    // const elapsed = 0;
+
+    const canvas = canvasRef.current;
+
+    // const CanvasBgColor = (newColor: string) => {
+    //     // Logic to change color
+    //     setCanvasBgColor(newColor); // Example
+    // };
+
+    const ran = (min: number, max: number) => {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const element = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - element.left;
+        const y = e.clientY - element.top + window.scrollY;
+        setMouseLocation((prevMouse) => ({ ...prevMouse, x: x, y: y }));
+    };
+
+    const handleMouseOut = () => {
+        setMouseLocation({ x: 1000, y: 1000, down: false });
+    };
+    const clear = () => {
+        // TODO: obv
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    const updatePoints = () => {
+        var i, currentPoint, theta, distance, dx, dy;
+
+        setImpulsX(impulsX - impulsX / 30);
+        setImpulsY(impulsY - impulsY / 30);
+
+        var shapeIndex = this.points[Math.floor(currentShapeIndex)];
+
+        if (onMobile == true) {
+            if (decMultiplier < 0.23) setDecMultiplier(decMultiplier + 0.0015);
+        } else {
+            if (decMultiplier < 0.125) setDecMultiplier(decMultiplier + 0.0004);
+        }
+
+        //proc
+        for (i = 0; i < shapeIndex.length; i++) {
+            currentPoint = shapeIndex[i];
+
+            theta = Math.atan2(
+                currentPoint.y - mouse.y,
+                currentPoint.x - mouse.x
+            );
+
+            distance =
+                (reactionSensitivity * 60) /
+                Math.sqrt(
+                    (mouse.x - currentPoint.x) * (mouse.x - currentPoint.x) +
+                        (mouse.y - currentPoint.y) * (mouse.y - currentPoint.y)
+                );
+            if (distance > 50) {
+                distance = 0;
+            }
+
+            if (!shapeIndex[i].time) {
+                shapeIndex[i].time = ran(70, 200);
+                shapeIndex[i].deg = ran(-120, 180);
+                shapeIndex[i].vel = ran(0.08, 0.14);
+            }
+
+            // Calc movement
+
+            var velocity =
+                randomMovement == false ? shapeIndex[i].vel : shapeIndex[i].vel;
+
+            dx = velocity * Math.cos((shapeIndex[i].deg * Math.PI) / 180);
+            dy = velocity * Math.sin((shapeIndex[i].deg * Math.PI) / 180);
+
+            if (loaded != false) {
+                currentPoint.x += dx;
+                currentPoint.y += dy;
+            }
+
+            if (shapeIndex[i].curve > 0) {
+                shapeIndex[i].deg = shapeIndex[i].deg + 2;
+            } else {
+                shapeIndex[i].deg = shapeIndex[i].deg - 2;
+            }
+
+            shapeIndex[i].time = shapeIndex[i].time - 1;
+
+            //before loaded
+            if (loaded == false) {
+                if (shapeIndex[i].vel < 0.4) {
+                    //skip processing.
+                } else {
+                    shapeIndex[i].vel = shapeIndex[i].vel - 0.0;
+                }
+
+                currentPoint.x += Math.cos(theta) * distance;
+                currentPoint.y += Math.sin(theta) * distance;
+                //after loaded
+            } else {
+                //next shape
+                if (randomMovement == false) {
+                    if (sequenceActive == false) {
+                        currentPoint.baseRadius = Math.ceil(
+                            currentPoint.randomNum *
+                                imgsToDraw[Math.floor(currentShapeIndex)]
+                                    .maxParticleSize
+                        );
+
+                        currentPoint.baseRadiusOriginal =
+                            currentPoint.baseRadius;
+
+                        if (shapeIndex[i].vel < 0.4) shapeIndex[i].time = 0;
+                        else shapeIndex[i].vel = shapeIndex[i].vel - 0.008;
+
+                        currentPoint.x +=
+                            Math.cos(theta) * distance +
+                            (shapeIndex[i].originalX - currentPoint.x) *
+                                decMultiplier;
+                        currentPoint.y +=
+                            Math.sin(theta) * distance +
+                            (shapeIndex[i].originalY - currentPoint.y) *
+                                decMultiplier;
+                    } else {
+                        if (
+                            typeof points[Math.floor(currentShapeIndex)][
+                                currentSequenceIndex
+                            ][i] !== "undefined"
+                        ) {
+                            currentPoint.x +=
+                                Math.cos(theta) * distance +
+                                (points[Math.floor(currentShapeIndex)][0][i]
+                                    .seqX -
+                                    currentPoint.x) *
+                                    0.08;
+                            currentPoint.y +=
+                                Math.sin(theta) * distance +
+                                (points[Math.floor(currentShapeIndex)][0][i]
+                                    .seqY -
+                                    currentPoint.y) *
+                                    0.08;
+                        }
+                    }
+                }
+
+                //random movement
+                else {
+                    if (i == 0 && reactionSensitivity < 8) {
+                        setReactionSensitivity(8);
+                    }
+
+                    var sizeMovement =
+                        (shapeIndex[i].randomNum * currentPoint.baseRadius) / 4;
+
+                    if (sizeMovement < 0.25) {
+                        sizeMovement = 0.25;
+                    }
+
+                    if (!shapeIndex[i].time2) {
+                        shapeIndex[i].time2 = ran(300, 900);
+                    }
+
+                    shapeIndex[i].time2 = shapeIndex[i].time2 - 1;
+
+                    currentPoint.x +=
+                        Math.cos(theta) * distance +
+                        (shapeIndex[i].toX - currentPoint.x) * 0.027;
+                    currentPoint.y +=
+                        Math.sin(theta) * distance +
+                        (shapeIndex[i].toY - currentPoint.y) * 0.027;
+
+                    // check for bounds
+                    // TODO: need to be able to reference Canvas object
+                    if (currentPoint.x < -(canvas.width * 0.1)) {
+                        currentPoint.x = canvas.width * 1.1;
+                        currentPoint.toX = canvas.width * 1.1 - ran(20, 40) * 4;
+                    }
+                    if (currentPoint.x > canvas.width * 1.1) {
+                        currentPoint.x = -(canvas.width * 0.1);
+                        currentPoint.toX =
+                            -(canvas.width * 0.1) + ran(20, 40) * 4;
+                    }
+
+                    if (currentPoint.y < -(canvas.height * 0.1)) {
+                        currentPoint.y = canvas.height * 1.1;
+                        currentPoint.toY =
+                            canvas.height * 1.1 - ran(20, 40) * 4;
+                    }
+                    if (currentPoint.y > canvas.height * 1.1) {
+                        currentPoint.y = -(canvas.height * 0.1);
+                        currentPoint.toY =
+                            -(canvas.height * 0.1) + ran(20, 40) * 4;
+                    }
+
+                    currentPoint.toX +=
+                        Math.floor((impulsX * sizeMovement * 30) / 30) +
+                        (impulsX / 7) * currentPoint.randomPosX;
+                    currentPoint.toY +=
+                        Math.floor((impulsY * sizeMovement * 30) / 30) +
+                        (impulsY / 7) * currentPoint.randomPosY;
+
+                    //sparkle
+                    if (currentPoint.shrinkDelay >= 0)
+                        currentPoint.shrinkDelay =
+                            currentPoint.shrinkDelay - 0.5;
+
+                    if (
+                        currentPoint.flashSize == true &&
+                        currentPoint.shrinkDelay <= 0
+                    ) {
+                        ////start large
+                        if (
+                            currentPoint.baseRadius ==
+                                currentPoint.baseRadiusOriginal &&
+                            currentPoint.shrinking == false
+                        ) {
+                            currentPoint.baseRadius =
+                                imgsToDraw[Math.floor(currentShapeIndex)]
+                                    .maxParticleSize + 4;
+                            currentPoint.alpha = 1;
+                            currentPoint.color =
+                                "rgba(" +
+                                currentPoint.a +
+                                "," +
+                                currentPoint.g +
+                                "," +
+                                currentPoint.b +
+                                "," +
+                                "1)";
+                            currentPoint.shrinking = true;
+                        }
+
+                        ////dec
+                        currentPoint.baseRadius =
+                            currentPoint.baseRadius - 0.3 > 1
+                                ? currentPoint.baseRadius - 0.3
+                                : 1;
+                        currentPoint.alpha =
+                            currentPoint.alpha >= currentPoint.originalAlpha &&
+                            currentPoint.originalAlpha != 1
+                                ? currentPoint.alpha - 0.01
+                                : currentPoint.originalAlpha;
+                        currentPoint.color =
+                            "rgba(" +
+                            currentPoint.r +
+                            "," +
+                            currentPoint.g +
+                            "," +
+                            currentPoint.b +
+                            "," +
+                            currentPoint.alpha +
+                            ")";
+
+                        ////end size
+                        if (
+                            currentPoint.baseRadius <=
+                                currentPoint.baseRadiusOriginal &&
+                            currentPoint.shrinking == true
+                        ) {
+                            currentPoint.baseRadius =
+                                currentPoint.baseRadiusOriginal;
+                            currentPoint.flashSize = false;
+                            currentPoint.shrinking = false;
+                            currentPoint.shrinkDelay = Math.random() * 100;
+                            currentPoint.color =
+                                "rgba(" +
+                                currentPoint.r +
+                                "," +
+                                currentPoint.g +
+                                "," +
+                                currentPoint.b +
+                                "," +
+                                currentPoint.originalAlpha +
+                                ")";
+
+                            ////set new random one
+                            shapeIndex[
+                                Math.floor(Math.random() * shapeIndex.length)
+                            ].flashSize = true;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    const drawPoints = () => {
+        var i, currentPoint;
+
+        var shapeIndex = points[Math.floor(currentShapeIndex)];
+
+        for (i = 0; i < shapeIndex.length; i++) {
+            currentPoint = shapeIndex[i];
+
+            var randomNum = shapeIndex[i].randomNum;
+            if (randomNum < 0.1) {
+                randomNum = 0.3;
+            }
+
+            //skip drawing some particles during trans
+            if (
+                currentPoint.hiddenDuringTrans == true &&
+                randomMovement == true
+            ) {
+                continue;
+            }
+
+            // Draw the particle
+            //   TODO: need to reference the context
+            context.beginPath();
+            context.arc(
+                currentPoint.x,
+                currentPoint.y,
+                currentPoint.baseRadius,
+                0,
+                Math.PI * 2,
+                true
+            );
+            context.fillStyle = currentPoint.color;
+            context.fill();
+            context.closePath();
+        }
+    };
+
+    const draw = () => {
+        // TODO: uncomment if you want to have random movement option
+        if (regularAnimation == true || randomMovement == true) {
+            // Animation logic
+            const id = requestAnimationFrame(draw);
+            setAnimationId(id);
+
+            //throttle fps to 60
+            setNow(Date.now());
+            if (now != null) {
+                setElapsed(now - then);
+            }
+
+            // Nodes.elapsed = Nodes.now - Nodes.then;
+            if (elapsed > 16.666 && now) {
+                setThen(now - (elapsed % 16.666));
+
+                // TODO: revisit this logic. Figure out what it is trying to do
+                if ($("#page-header-bg.out-of-sight").length == 0) {
+                    clear();
+                    updatePoints();
+                    drawPoints();
+                }
+            }
+        } else {
+            // TODO: implement this later. For now regular animation is set to true
+            setFpsDec(fpsDec + 0.23);
+            // Nodes.fpsDec +=0.23;
+            setFps(fps >= 0 ? fps - fpsDec : 0);
+
+            setDecMultiplier(0.14);
+            setTimeout(function () {
+                setAnimationId(
+                    requestAnimationFrame(function () {
+                        if (fps > 0) draw();
+                    })
+                );
+                // Drawing code goes here
+            }, 1000 / fps);
+
+            // TODO: revisit
+            if ($("#page-header-bg.out-of-sight").length == 0) {
+                clear();
+                updatePoints();
+                drawPoints();
+            }
+        }
+    };
+
+    const shapeTextDisplay = (index: number, index2: number, seek: boolean) => {
+        // TODO: probably a more React-y way to handle these timeouts
+        // clearTimeout(resetShapeTextTimeout);
+
+        var $rotate = 0;
+        var $selector = ".nectar-particles";
+        // TODO: set z-index of nectar particles to 10
+        // jQuery(Nodes.canvasID).parents($selector).find('.inner-wrap').css('z-index',10);
+
+        if (seek !== false) {
+            // TODO: Fade the text out and
+            //   jQuery(Nodes.canvasID).parents($selector).find('.inner-wrap:not(.shape-'+index+')').each(function(i){
+            //     $(this).find('> *').each(function(i){
+            //       $(this).stop(true,true).delay(i*150).transition({'opacity':'0'}, 250, 'ease');
+            //     });
+            //   });
+            // TODO: set reset shape text timeout with x and y rotation to non shapes
+            //   Nodes.resetShapeTextTimeout = setTimeout(function(){ jQuery(Nodes.canvasID).parents($selector).find('.inner-wrap:not(.shape-'+index+') > *').delay(50).transition({ 'rotateX': $rotate, 'y': '30px'}, 0); }, jQuery(Nodes.canvasID).parents($selector).find('.inner-wrap:not(.shape-'+index+')').length * 200 );
+        } else {
+            // TODO: fade shape-index elements out
+            //   jQuery(Nodes.canvasID).parents($selector).find('.shape-'+index+' > *').each(function(i){
+            //     $(this).stop(true,true).delay(i*150).transition({'opacity':'0'}, 250, 'ease');
+            //   });
+            //   TODO: set reset shape text timeout with x and y rotation to shapes
+            //   Nodes.resetShapeTextTimeout = setTimeout(function(){ jQuery(Nodes.canvasID).parents($selector).find('.shape-'+index+' > *').transition({'rotateX': $rotate, 'y': '30px'}, 0); }, jQuery(Nodes.canvasID).parents($selector).find('.shape-'+index+' > *').length * 200 );
+        }
+        // TODO: set next shape-index z-index to 100
+        // jQuery(Nodes.canvasID).parents($selector).find('.shape-'+index2).css('z-index',100);
+
+        // TODO: Fades in new shape-index elements in
+        jQuery(Nodes.canvasID)
+            .parents($selector)
+            .find(".shape-" + index2 + " > *")
+            .each(function (i) {
+                $(this)
+                    .stop(true, true)
+                    .delay(
+                        jQuery(Nodes.canvasID)
+                            .parents($selector)
+                            .find(".shape-" + index + " > *").length *
+                            150 +
+                            i * 175
+                    )
+                    .transition(
+                        { opacity: "1", y: 0, rotateX: "0" },
+                        700,
+                        "ease"
+                    );
+            });
+    };
+
+    const updateCanvasBgColor = () => {
+        // TODO: set background color to the background color specified in the imgsToDrawArray at the CurrentShape index
+        // jQuery(Nodes.canvasID).parents('.nectar-particles').find('.canvas-bg').css({
+        //   'background-color': Nodes.imgsToDraw[Nodes.currentShapeIndex].backgroundColor
+        // });
+    };
+
+    const particleSequenceLogic = () => {
+        setInterval(function () {
+            var currentPoint, otherPoint, otherPointCache, distance, def;
+
+            for (var i = 0; i < points.length; i++) {
+                //check for sequenced
+                if (
+                    !jQuery.isArray(points[i]) &&
+                    typeof points[i] === "object"
+                ) {
+                    for (var j = 0; j < 1; j++) {
+                        for (var k = 0; k < points[i][0].length; k++) {
+                            currentPoint = points[i][0][k];
+
+                            def = 1000;
+
+                            for (
+                                var u = 0;
+                                u < points[i][currentSequenceIndex].length;
+                                u++
+                            ) {
+                                otherPoint = points[i][currentSequenceIndex][u];
+
+                                if (otherPoint.sequenceUsed != true) {
+                                    distance = Math.sqrt(
+                                        (otherPoint.originalX -
+                                            currentPoint.x) *
+                                            (otherPoint.originalX -
+                                                currentPoint.x) +
+                                            (otherPoint.originalY -
+                                                currentPoint.y) *
+                                                (otherPoint.originalY -
+                                                    currentPoint.y)
+                                    );
+
+                                    if (distance <= def && def > 10) {
+                                        def = distance;
+
+                                        currentPoint.seqX =
+                                            otherPoint.originalX;
+                                        currentPoint.seqY =
+                                            otherPoint.originalY;
+
+                                        otherPointCache = otherPoint;
+                                    }
+
+                                    if (
+                                        u ==
+                                        points[i][currentSequenceIndex].length -
+                                            1
+                                    ) {
+                                        otherPointCache.sequenceUsed = true;
+                                    }
+                                }
+                            }
+
+                            //clear sequence used
+                            if (k == points[i][0].length - 1) {
+                                for (
+                                    var u = 0;
+                                    u < points[i][currentSequenceIndex].length;
+                                    u++
+                                ) {
+                                    points[i][currentSequenceIndex][
+                                        u
+                                    ].sequenceUsed = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //update shape index
+            currentSequenceIndex + 1 ==
+            Object.keys(points[currentShapeIndex]).length
+                ? setCurrentSequenceIndex(0)
+                : setCurrentSequenceIndex(currentSequenceIndex + 1);
+        }, 80);
+    };
+
+    const particleRotateLogic = (seek: number) => {
+        //clear current timeout incase seeked
+        if (timeoutHolder.current != null) {
+            clearTimeout(timeoutHolder.current);
+        }
+
+        //chance for random movement or next shape
+        // var explodeChance = (disableExplosion == 'on') ? 0 : 0.4;
+        var explodeChance = 0.4;
+
+        var timeoutInterval;
+
+        if (Math.random() > explodeChance || seek !== 0) {
+            // TODO: this seek logic doesnt make any sense to me? was a boolean but maybe it is just a clever way of expressing it as 0
+            if (seek !== 0) {
+                setPrevShapeIndex(currentShapeIndex);
+                // prevShapeIndex = currentShapeIndex;
+                setCurrentShapeIndex(seek);
+                // Nodes.currentShapeIndex = seek;
+            } else {
+                setCurrentShapeIndex(
+                    currentShapeIndex + 1 == imgsToDraw.length
+                        ? 0
+                        : currentShapeIndex + 1
+                );
+            }
+
+            setDecMultiplier(0.06);
+
+            var prevIndex =
+                currentShapeIndex == points.length
+                    ? 0
+                    : Math.floor(currentShapeIndex - 1);
+
+            if (Math.floor(currentShapeIndex) - 1 == -1) {
+                prevIndex = points.length - 1;
+            }
+
+            var prevPrevIndex =
+                prevIndex - 1 == -1 ? points.length - 1 : prevIndex - 1;
+            var mathRnd;
+            var xPos, yPos;
+
+            //set next shape x/y pos to match the previos one after rnd movement
+            for (var i = 0; i < points[currentShapeIndex].length; i++) {
+                mathRnd = Math.random();
+
+                // seek !== false
+                if (seek !== 0) {
+                    xPos =
+                        points[prevShapeIndex][
+                            Math.floor(mathRnd * points[prevShapeIndex].length)
+                        ].x;
+                    yPos =
+                        points[prevShapeIndex][
+                            Math.floor(mathRnd * points[prevShapeIndex].length)
+                        ].y;
+                } else {
+                    if (randomMovement == true) {
+                        mathRnd = Math.random();
+
+                        xPos =
+                            points[prevIndex][
+                                Math.floor(mathRnd * points[prevIndex].length)
+                            ].x;
+                        yPos =
+                            points[prevIndex][
+                                Math.floor(mathRnd * points[prevIndex].length)
+                            ].y;
+                    } else {
+                        xPos =
+                            points[prevIndex][
+                                Math.floor(mathRnd * points[prevIndex].length)
+                            ].x;
+                        yPos =
+                            points[prevIndex][
+                                Math.floor(mathRnd * points[prevIndex].length)
+                            ].y;
+                    }
+                }
+
+                points[currentShapeIndex][i].x = xPos;
+                points[currentShapeIndex][i].y = yPos;
+            }
+
+            var $paginationTimeout = 300;
+
+            //reset points to prev shap after animation is complete
+            for (i = 0; i < points[prevIndex].length; i++) {
+                mathRnd = Math.random();
+                xPos =
+                    points[prevPrevIndex][
+                        Math.floor(mathRnd * points[prevPrevIndex].length)
+                    ].originalX;
+                yPos =
+                    points[prevPrevIndex][
+                        Math.floor(mathRnd * points[prevPrevIndex].length)
+                    ].originalY;
+                points[prevIndex][i].x = xPos;
+                points[prevIndex][i].y = yPos;
+
+                points[prevIndex][i].toX = Math.random() * window.innerWidth;
+                points[prevIndex][i].toY = Math.random() * window.innerHeight;
+
+                //reset flash chance
+                var flashChance = Math.random() < 0.5 ? true : false;
+                points[prevIndex][i].flashSize = flashChance;
+            }
+
+            if (reactionSensitivity > 4) {
+                setReactionSensitivity(window.innerWidth > 690 ? 4 : 1);
+            }
+
+            //handle captions
+            var currentCaptionIndex, nextCaptionIndex;
+
+            //   seek !== false
+            if (seek !== 0) {
+                currentCaptionIndex = seek + 1;
+                nextCaptionIndex = seek + 1;
+            } else {
+                currentCaptionIndex =
+                    currentShapeIndex == 0
+                        ? imgsToDraw.length
+                        : currentShapeIndex;
+                nextCaptionIndex =
+                    currentShapeIndex == points.length
+                        ? 0
+                        : Math.floor(currentShapeIndex + 1);
+            }
+
+            shapeTextDisplay(currentCaptionIndex, nextCaptionIndex, seek);
+
+            //update pagination
+            //   TODO: revisit this. Might need to solve pagination
+            //   var $selector = ($('.nectar-box-roll').length > 0) ? '.nectar-box-roll': '.nectar-particles';
+            //   if($(Nodes.canvasID).parents($selector).find('.pagination-navigation').length > 0 && seek == false) {
+            //     setTimeout( function(){
+            //       $(Nodes.canvasID).parents($selector).find('.pagination-dot').eq(Nodes.currentShapeIndex).trigger('click');
+            //     },$paginationTimeout);
+            //   }
+
+            timeoutInterval = rotateTimer;
+
+            timeoutHolder.current = setTimeout(function () {
+                particleRotateLogic(0);
+            }, timeoutInterval);
+        } else {
+            timeoutInterval = 2800;
+            timeoutHolder.current = setTimeout(function () {
+                particleRotateLogic(0);
+            }, timeoutInterval);
+
+            setRandomMovement(true);
+            //   $(Nodes.canvasID).attr('data-randomMovement','true');
+
+            setImpulsX(Math.random() * 600 - 300);
+            setImpulsY(-Math.random() * 300);
+
+            for (i = 0; i < points[currentShapeIndex].length; i++) {
+                var currentPoint = points[currentShapeIndex][i];
+                currentPoint.randomPosX = Math.random() * 6;
+                currentPoint.randomPosY = Math.random() * 6;
+            }
+        }
+        // TODO: implement
+        updateCanvasBgColor();
+    };
+
+    const particlesRotate = (skipInitialDelay: boolean) => {
+        var initTimeOut = skipInitialDelay == true ? 0 : 800;
+
+        setTimeout(function () {
+            var timeoutInterval =
+                loaded == false ? rotateTimer + 1000 : rotateTimer;
+
+            setLoaded(true);
+            // TOOD: my sense is this is not needed. revisit if need be
+            //   setTimeout(function(){ $(Nodes.canvasID).attr('data-loaded','true'); }, 1000);
+
+            if (imgsToDraw.length > 1)
+                timeoutHolder.current = setTimeout(function () {
+                    // 0 = false boolean
+                    particleRotateLogic(0);
+                }, timeoutInterval);
+
+            updateCanvasBgColor();
+            // TODO: need to be able to do this without passing canvasId
+            initTextEffect();
+        }, initTimeOut);
+
+        // TOOD: look to implement this later
+        //fadeout loading animation
+        // if(skipInitialDelay != true) {
+        //   $('#ajax-loading-screen').stop().transition({'opacity':0},1000,function(){
+        //     $(this).css({'display':'none'});
+        //   });
+        //   $('#ajax-loading-screen .loading-icon').transition({'opacity':0},1000);
+        // }
+    };
+
+    const preparePoints = (index: number, index2: number, resize: boolean) => {
+        // Clear the current points
+        // TODO: same thing, check array logic here.
+        if (!Array.isArray(bgImage[index])) {
+            // Your code if bgImage[index] is not an array
+            points[index] = [];
+        } else {
+            if (typeof points[index] !== "object") points[index] = {};
+            points[index][index2] = [];
+        }
+
+        var i, j;
+        if (bgContextPixelData && canvas) {
+            var colors = bgContextPixelData.data;
+
+            for (i = 0; i < canvas.height; i += imgsToDraw[index].density) {
+                for (j = 0; j < canvas.width; j += imgsToDraw[index].density) {
+                    var pixelPosition = (j + i * bgContextPixelData.width) * 4;
+
+                    // Dont use whiteish pixels
+                    if (
+                        (colors[pixelPosition] > 200 &&
+                            colors[pixelPosition + 1] > 200 &&
+                            colors[pixelPosition + 2] > 200) ||
+                        colors[pixelPosition + 3] === 0
+                    ) {
+                        continue;
+                    }
+
+                    var xPos, yPos;
+
+                    //first shape while loading
+                    if (index == 0) {
+                        var rndNumX =
+                            Math.random() > 0.5
+                                ? Math.random() * window.innerWidth
+                                : Math.random() * -window.innerWidth;
+                        var rndNumY =
+                            Math.random() > 0.5
+                                ? Math.random() * window.innerHeight
+                                : Math.random() * -window.innerHeight;
+                        xPos =
+                            Math.random() * (window.innerWidth * 2) + rndNumX;
+                        yPos =
+                            Math.random() * (window.innerHeight * 2) + rndNumY;
+                    }
+
+                    //all others
+                    else {
+                        var mathRnd = Math.random();
+
+                        //going back into sequenced
+                        var prevIndex = index == points.length ? 0 : index - 1;
+                        // TODO: need to use different function to check array
+                        if (
+                            !jQuery.isArray(points[prevIndex]) &&
+                            typeof points[prevIndex] === "object"
+                        ) {
+                            var prevIndex2 =
+                                index2 == points[prevIndex].length
+                                    ? 0
+                                    : index2 - 1;
+                            mathRnd = Math.random();
+                            xPos =
+                                points[prevIndex][prevIndex2][
+                                    Math.floor(
+                                        mathRnd *
+                                            points[prevIndex][prevIndex2].length
+                                    )
+                                ].originalX;
+                            yPos =
+                                points[prevIndex][prevIndex2][
+                                    Math.floor(
+                                        mathRnd *
+                                            points[prevIndex][prevIndex2].length
+                                    )
+                                ].originalY;
+                        } else {
+                            mathRnd = Math.random();
+                            xPos =
+                                points[prevIndex][
+                                    Math.floor(
+                                        mathRnd * points[prevIndex].length
+                                    )
+                                ].originalX;
+                            yPos =
+                                points[prevIndex][
+                                    Math.floor(
+                                        mathRnd * points[prevIndex].length
+                                    )
+                                ].originalY;
+                        }
+                    }
+
+                    //when user resizes screen
+                    //when user resizes screen
+                    if (resize == true && randomMovement == false && loaded) {
+                        xPos = j + ran(-7, 7);
+                        yPos = i + ran(-7, 7);
+                    } else if (
+                        resize == true &&
+                        randomMovement == true &&
+                        loaded
+                    ) {
+                        xPos = Math.random() * window.innerWidth;
+                        yPos = Math.random() * window.innerHeight;
+                    }
+
+                    //alpha mapping
+                    //   switch(imgsToDraw[index].colorAlpha){
+                    //     case 'original':
+                    //     alpha = 1;
+                    //     break;
+                    //     case 'random':
+                    //     var alpha = Math.random() + 0.3;
+                    //     if(alpha > 1) {
+                    //       alpha = 1;
+                    //     }
+                    //     break;
+                    //   }
+                    var alpha = 1;
+
+                    //color mapping
+                    var r, g, b, color;
+
+                    switch (imgsToDraw[index].colorMapping) {
+                        case "original":
+                            r = colors[pixelPosition];
+                            g = colors[pixelPosition + 1];
+                            b = colors[pixelPosition + 2];
+                            color =
+                                "rgba(" +
+                                r +
+                                "," +
+                                g +
+                                "," +
+                                b +
+                                "," +
+                                alpha +
+                                ")";
+                            break;
+
+                        case "solid":
+                            var hex = imgsToDraw[index].color.replace("#", "");
+                            r = parseInt(hex.substring(0, 2), 16);
+                            g = parseInt(hex.substring(2, 4), 16);
+                            b = parseInt(hex.substring(4, 6), 16);
+                            color =
+                                "rgba(" +
+                                r +
+                                "," +
+                                g +
+                                "," +
+                                b +
+                                "," +
+                                alpha +
+                                ")";
+                            break;
+
+                        case "random":
+                            r = Math.floor(Math.random() * 255);
+                            g = Math.floor(Math.random() * 255);
+                            b = Math.floor(Math.random() * 255);
+                            color =
+                                "rgba(" +
+                                r +
+                                "," +
+                                g +
+                                "," +
+                                b +
+                                "," +
+                                alpha +
+                                ")";
+                            break;
+                    }
+
+                    var flashChance = Math.random() < 0.5 ? true : false;
+                    var rndNum = Math.random();
+
+                    if (!Array.isArray(bgImage[index])) {
+                        points[index].push({
+                            x: xPos,
+                            y: yPos,
+                            originalX: j,
+                            originalY: i,
+                            toX: Math.random() * window.innerWidth,
+                            toY: Math.random() * window.innerHeight,
+                            r: r,
+                            g: g,
+                            b: b,
+                            a: alpha,
+                            hiddenDuringTrans: false,
+                            originalAlpha: alpha,
+                            color: color,
+                            baseRadius: Math.ceil(
+                                rndNum * imgsToDraw[index].maxParticleSize
+                            ),
+                            baseRadiusOriginal: Math.ceil(
+                                rndNum * imgsToDraw[index].maxParticleSize
+                            ),
+                            randomPosX: Math.random() * 6,
+                            randomPosY: Math.random() * 6,
+                            shrinking: false,
+                            shrinkDelay: Math.random() * 100,
+                            flashSize: flashChance,
+                            used: false,
+                            duplicate: false,
+                            randomNum: rndNum,
+                        });
+
+                        if (points[index].baseRadius < 1) {
+                            points[index].baseRadius = 1;
+                            points[index].baseRadiusOriginal = 1;
+                        }
+                    } else {
+                        points[index][index2].push({
+                            x: j,
+                            y: i,
+                            originalX: j,
+                            originalY: i,
+                            seqX: j,
+                            seqY: i,
+                            sequenceUsed: false,
+                            toX: Math.random() * window.innerWidth,
+                            toY: Math.random() * window.innerHeight,
+                            color: color,
+                            baseRadius: Math.ceil(rndNum * 3),
+                            baseRadiusOriginal: Math.ceil(rndNum * 3),
+                            shrinking: false,
+                            shrinkDelay: Math.random() * 100,
+                            flashSize: flashChance,
+                            randomNum: rndNum,
+                        });
+                    }
+                }
+            }
+
+            //hide particles for trans
+            for (var u = 0; u < points[index].length; u++) {
+                var randomNum = ran(0, points[index].length);
+                var divider;
+
+                if (window.innerWidth < 690) {
+                    divider = points[index].length > 200 ? 8 : 5;
+                    if (
+                        points[index].length > 150 &&
+                        randomNum > Math.floor(points[index].length / divider)
+                    ) {
+                        points[index][u].hiddenDuringTrans = true;
+                    }
+                } else {
+                    if (points[index].length > 800) {
+                        divider = 6;
+                    } else if (
+                        points[index].length <= 800 &&
+                        points[index].length > 600
+                    ) {
+                        divider = 4.5;
+                    } else if (
+                        points[index].length <= 600 &&
+                        points[index].length > 400
+                    ) {
+                        divider = 3.5;
+                    } else if (points[index].length <= 400) {
+                        divider = 1.5;
+                    }
+
+                    if (
+                        points[index].length > 350 &&
+                        randomNum > Math.floor(points[index].length / divider)
+                    ) {
+                        points[index][u].hiddenDuringTrans = true;
+                    }
+                }
+            }
+
+            //initiate
+            if (index == imgsToDraw.length - 1) {
+                // TODO: need to write this function
+                draw();
+
+                //start the rotate timer
+                // TODO: need to write this function
+                if (resize == false) particlesRotate(false);
+            }
+        }
+    };
+
+    const callDrawImageToBackground = () => {
+        setLoadedCount(loadedCount + 1);
+
+        //wait until all are loaded
+        if (loadedCount == totalImgCount) {
+            for (var i = 0; i < imgsToDraw.length; i++) {
+                // TODO: isArray
+                // ******************************* IMPORTANT! If bgImage is not an array that means it is an image ********************
+                if (!jQuery.isArray(bgImage[i])) {
+                    //   TODO: need to create null checks
+                    drawImageToBackground(i, null, false, 1);
+                } else {
+                    for (var j = 0; j < imgsToDraw[i].shape.length; j++) {
+                        drawImageToBackground(i, j, false, true);
+                    }
+                }
+            }
+        }
+    };
+
+    const loadData = (
+        data: string,
+        index: number,
+        index2: number,
+        sequence: boolean
+    ) => {
+        // TODO: Obv need to figure out bgImage
+        if (sequence == true) {
+            if (typeof bgImage[index] !== "object") bgImage[index] = [];
+            bgImage[index][index2] = new Image();
+            bgImage[index][index2].src = data;
+        } else {
+            bgImage[index] = new Image();
+            bgImage[index].src = data;
+        }
+        // TODO: jquery is array
+        if (!jQuery.isArray(bgImage[index])) {
+            bgImage[index].onload = function () {
+                callDrawImageToBackground(index, index2);
+            };
+        } else {
+            bgImage[index][index2].onload = function () {
+                callDrawImageToBackground(index, index2);
+            };
+        }
+    };
+
+    const drawImageToBackground = (
+        index: number,
+        index2: number,
+        resize: boolean,
+        sequence: boolean
+    ) => {
+        // var shapeIndex = (index2 == null) ? bgImage[index] : bgImage[index][index2];
+        // TODO: figure out why bgImage could be a nested array
+        var shapeIndex = bgImage[index];
+
+        setBgCanvas(document.createElement("canvas"));
+        if (bgCanvas && canvas) {
+            bgCanvas.width = canvas.width;
+            bgCanvas.height = canvas.height;
+
+            var newWidth, newHeight;
+            var userResized = resize;
+            var heightDiff = 0;
+
+            if (bgCanvas.height < 650) heightDiff = heightDiff / 2;
+
+            // If the image is too big for the screen... scale it down.
+            if (
+                shapeIndex.width > bgCanvas.width - 50 - heightDiff ||
+                shapeIndex.height > bgCanvas.height - 50 - heightDiff
+            ) {
+                var maxRatio = Math.max(
+                    shapeIndex.width / (bgCanvas.width - 50),
+                    shapeIndex.height / (bgCanvas.height - 100 - heightDiff)
+                );
+
+                newWidth = shapeIndex.width / maxRatio;
+                newHeight = shapeIndex.height / maxRatio;
+
+                //change density based on ratio
+                if (bgCanvas.width < 1600) {
+                    if (maxRatio > 3 && maxRatio <= 4) {
+                        imgsToDraw[index].density =
+                            imgsToDraw[index].densityOriginal - 3;
+                        if (imgsToDraw[index].maxParticleSize >= 3)
+                            imgsToDraw[index].maxParticleSize =
+                                imgsToDraw[index].maxParticleSizeOriginal - 1;
+                    } else if (maxRatio > 4) {
+                        if (bgCanvas.width > 800)
+                            imgsToDraw[index].density =
+                                imgsToDraw[index].densityOriginal - 4;
+                        else
+                            imgsToDraw[index].density =
+                                imgsToDraw[index].densityOriginal - 5;
+
+                        if (imgsToDraw[index].maxParticleSize > 2)
+                            imgsToDraw[index].maxParticleSize = 2;
+                    } else if (maxRatio <= 3) {
+                        imgsToDraw[index].density =
+                            imgsToDraw[index].densityOriginal;
+                        imgsToDraw[index].maxParticleSize =
+                            imgsToDraw[index].maxParticleSizeOriginal;
+                    }
+                } else {
+                    imgsToDraw[index].density =
+                        imgsToDraw[index].densityOriginal;
+                    imgsToDraw[index].maxParticleSize =
+                        imgsToDraw[index].maxParticleSizeOriginal;
+                }
+            } else {
+                newWidth = shapeIndex.width;
+                newHeight = shapeIndex.height;
+            }
+
+            // Draw to background canvas
+            // TODO: revisit
+            // var headerHeight = ($('#header-outer[data-transparent-header="true"]').length > 0 && $('body.mobile').length == 0 || $('#header-outer[data-permanent-transparent="1"]').length > 0) ? 0 : $('#header-outer').height();
+            var headerHeight = 0;
+            const context = bgCanvas.getContext("2d");
+            if (context) {
+                setBgContext(context);
+                if (bgContext) {
+                    bgContext.drawImage(
+                        shapeIndex,
+                        (canvas.width - newWidth) / 2,
+                        (canvas.height +
+                            headerHeight / 2 -
+                            newHeight -
+                            heightDiff * 1) /
+                            2,
+                        newWidth,
+                        newHeight
+                    );
+                    // bgContextPixelData = bgContext.getImageData( 0, 0, bgCanvas.width, bgCanvas.height );
+                    setBgContextPixelData(
+                        bgContext.getImageData(
+                            0,
+                            0,
+                            bgCanvas.width,
+                            bgCanvas.height
+                        )
+                    );
+                }
+            }
+
+            preparePoints(index, index2, userResized);
+        }
+    };
+
+    if (canvas) {
+        const context = canvas.getContext("2d");
+        const onMobile = canvas.width <= 690;
+        if (context) {
+            context.globalCompositeOperation = "lighter";
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.display = "block";
+        }
+    }
+
+    // TODO: need to look at this. may be a problem here
+    // This useEffect sets the canavs width and height to the windowSize. And it depends on windowSize,
+    // so this is triggered when there is a change to windowSize
+    useEffect(() => {
+        if (canvas) {
+            canvas.width = windowSize.width;
+            canvas.height = windowSize.height;
+        }
+    }, [windowSize]);
+
+    useEffect(() => {
+        // TODO: need to investigate resizing logic, and also potentially using many multiples of useEffect
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+            //
+            onWindowResize();
+        };
+
+        window.addEventListener("resize", handleResize);
+
+        const onWindowResize = () => {
+            console.log("on window resize");
+            if (animation != null) {
+                cancelAnimationFrame(animation);
+            }
+            // TODO: these may need to be made stateful
+            if (loadedCount == imgsToDraw.length) {
+                for (var i = 0; i < imgsToDraw.length; i++) {
+                    drawImageToBackground(i, null, true, false);
+                }
+            }
+
+            //set mobile state
+            this.onMobile = this.canvas.width <= 690 ? true : false;
+        };
+    });
+
+    useEffect(() => {
+        // Function to log a message
+        const init = () => {
+            // Set up the visual canvas
+
+            // set initial bg color
+            setCanvasBgColor(shapes[currentShapeIndex].backgroundColor);
+
+            // TODO: handle this later (for non fullscreen mobile)
+
+            // if($('#page-header-bg:not(.fullscreen-header)').length > 0 && $(window).width() < 1000) {
+            //     $(window).load(function(){
+            //         setTimeout(function(){
+
+            //         Nodes.canvas.width = ($(canvasID).parents('.nectar-box-roll').length > 0 ) ? window.innerWidth : $(canvasID).parents('#page-header-bg').outerWidth(true);
+            //         Nodes.canvas.height = ($(canvasID).parents('.nectar-box-roll').length > 0 ) ? window.innerHeight : $(canvasID).parents('#page-header-bg').outerHeight(true);
+            //         Nodes.onWindowResize();
+
+            //         },50);
+
+            //     });
+            // }
+
+            window.onresize = function (event) {
+                // if(typeof(event.isTrigger) !== 'undefined') {
+                //   return false;
+                // }
+                Nodes.canvas.width =
+                    $(canvasID).parents(".nectar-box-roll").length > 0
+                        ? window.innerWidth
+                        : $(canvasID)
+                              .parents("#page-header-bg")
+                              .outerWidth(true);
+                Nodes.canvas.height =
+                    $(canvasID).parents(".nectar-box-roll").length > 0
+                        ? window.innerHeight
+                        : $(canvasID)
+                              .parents("#page-header-bg")
+                              .outerHeight(true);
+                Nodes.onWindowResize();
+            };
+
+            //count shapes
+            var j = 0;
+            for (var i = 0; i < Nodes.imgsToDraw.length; i++) {
+                //check for sequenced
+                if (typeof Nodes.imgsToDraw[i].shape === "object") {
+                    for (j = 0; j < Nodes.imgsToDraw[i].shape.length; j++) {
+                        this.totalImgCount++;
+                    }
+                } else {
+                    this.totalImgCount++;
+                }
+            }
+
+            //start loading the shapes
+            var j = 0;
+            for (var i = 0; i < Nodes.imgsToDraw.length; i++) {
+                //check for sequenced
+                if (typeof Nodes.imgsToDraw[i].shape === "object") {
+                    for (j = 0; j < Nodes.imgsToDraw[i].shape.length; j++) {
+                        loadData(Nodes.imgsToDraw[i].shape[j], i, j, true);
+                    }
+                } else {
+                    loadData(Nodes.imgsToDraw[i].shape, i, null, false);
+                }
+            }
+        };
+    }, []);
+
+    return (
+        <div
+            className="nectar-particles"
+            onMouseMove={handleMouseMove}
+            onMouseOut={handleMouseOut}
+            data-disable-explosion="off"
+            data-rotation-timing=""
+        >
+            <div
+                className="canvas-bg"
+                style={{ backgroundColor: canvasBgColor }}
+            >
+                <canvas
+                    id="canvas"
+                    ref={canvasRef}
+                    data-active-index="0"
+                ></canvas>
+            </div>
+            <div className="container">
+                <div className="row">
+                    <div className="col span_6">
+                        <div className="shape"></div>
+                        <div className="inner-wrap shape-1">
+                            <h1>Welcome to ATeam</h1>{" "}
+                            <span className="subheader">
+                                Basketball modernized.
+                            </span>
+                        </div>
+                        <div className="shape"></div>
+                        <div className="inner-wrap shape-2">
+                            <h1>
+                                Everything your team needs, all in one place.
+                            </h1>{" "}
+                            <span className="subheader">
+                                Track stats, diagram plays, communicate with
+                                your players.
+                            </span>
+                        </div>
+                        <div className="shape"></div>
+                        <div className="inner-wrap shape-3">
+                            <h1>Made by coaches, for coaches.</h1>{" "}
+                            <span className="subheader">
+                                Every detail focused on making your life as a
+                                coach easier.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

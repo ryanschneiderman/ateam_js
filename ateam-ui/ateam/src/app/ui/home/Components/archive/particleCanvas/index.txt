@@ -1,0 +1,475 @@
+import React, { useRef, useEffect, useState } from 'react';
+import ImageLoader from '../../Models/ImageLoader';
+import ParticleSystem from '../../Models/ParticleSystem';
+import { ParticleImage } from '../../Models/ParticleImage';
+import { MousePosition } from "../../types"
+
+
+interface ParticleCanvasProps {
+  backgroundColor: string;
+  windowSize: { width: number; height: number };
+  // Additional props as needed
+}
+
+const ParticleCanvas: React.FC<ParticleCanvasProps> = ({ backgroundColor, windowSize }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvas = canvasRef.current;
+  const ctx = canvasRef.current?.getContext('2d');
+  const canvasBgRef = useRef<HTMLCanvasElement>(null);
+  const canvasBg: HTMLCanvasElement | null = canvasBgRef.current;
+  const canvsBgCtx = canvasBgRef.current?.getContext('2d');
+  
+  const [loaded, setLoaded] = useState<boolean>(false);
+  const [rotateTimer, setRotateTimer] = useState<number>(5500);
+
+  const [animationId, setAnimationId] = useState<number | null>(null);
+  const [isOutOfSight, setIsOutOfSight] = useState(false); // Assuming visibility state
+  const [now, setNow] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState<number>(0);
+  const [then, setThen] = useState<number>(Date.now());
+  const [particleImages, setParticleImages] = useState<ParticleImage[]>([]);
+  const [canvasHeight, setCanvasHeight] = useState<number | null>(null);
+  const [canvasWidth, setCanvasWidth] = useState<number | null>(null);
+  const [bgImages, setBgImages] = useState<HTMLImageElement[]>([])
+  const [canvsBgCtxPixelData, setCanvsBgCtxPixelData] = useState<ImageData>();
+  const timeoutHolder = useRef<ReturnType<typeof setTimeout>>();
+
+  const [imageIndex, setImageIndex] = useState<number>(0);
+
+  const [mousePosition, setMousePosition] = useState<MousePosition>({ x: 0, y: 0 });
+
+  // Event handler for mouse movement
+  const handleMouseMove = (event: MouseEvent) => {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  // Example usage:
+  const imageAttributes = [
+    { src: 'images/Basketball-Rev5.png' }
+    // { src: 'images/Basketball-Rev5.png' },
+    // Add more image attributes as needed
+  ];
+
+  useEffect(() => {
+    console.log("in mousemove useEffect");
+    // Add event listener when the component mounts
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // Remove event listener on cleanup
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []); // Empty dependency array ensures this effect runs only once
+
+  useEffect(() => {
+    console.log("in init useEffect");
+    setCanvasWidth(windowSize.width);
+    setCanvasHeight(windowSize.height);
+
+    // const loadImage = (url: string): Promise<HTMLImageElement> => {
+    const initializeImage = (imageUrl:string): Promise<ParticleImage> => {
+      return new Promise((resolve, reject) => {
+        const particleImage = new ParticleImage(
+          imageUrl
+        )
+        resolve(particleImage);
+      });
+    };
+    Promise.all(imageAttributes.map(imageAttribute => initializeImage(imageAttribute.src)))
+      .then(loadedImages => {
+        console.log("printing loaded images");
+        console.log(loadedImages);
+        setParticleImages(loadedImages);
+        console.log(particleImages);
+        loadImageData();
+      })
+      .catch(error => {
+          console.error("Failed to load images", error);
+      });
+
+    // initializeParticleImages();
+    
+
+    callDrawImageToBackground();
+    // if(imageIndex == particleImages.length -1) {
+    //   draw();
+      
+    //   // TODO: resize logic
+    //   // if(resize == false){
+    //     //start the rotate timer
+    //     particlesRotate(false);
+    //   // } 
+    // }
+  }, []);
+
+ 
+
+
+  
+
+  // TODO: I wonder if we can guarantee that these will happen synchronously and not async
+    // Once all images are loaded, update component state
+
+      
+            
+    
+
+  // Once ParticleImages are loaded, we need to instantiate the ParticleSystem. Pass in particleImages
+  const particleSystem = new ParticleSystem(particleImages);
+
+  // // Now we prepare particles for first image.
+  // particleSystem.prepareParticles(canvasHeight, canvasWidth, )
+
+
+  const clear = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const initializeParticleImages = () => {
+    let loadedCount = 0;
+    const totalImages = imageAttributes.length;
+    let particleImagesLoader: ParticleImage[] = [];
+
+    imageAttributes.forEach(attributes => {
+      const particleImage = new ParticleImage(
+        attributes.src,
+        // attributes.colorMapping,
+        // attributes.color,
+        // attributes.backgroundColor,
+        // attributes.colorAlpha,
+        // attributes.density,
+        // attributes.maxParticleSize
+      );
+
+      particleImagesLoader.push(particleImage);
+      loadedCount++;
+    });
+    console.log(particleImagesLoader);
+    setParticleImages(particleImagesLoader);
+  }
+
+  const initializeParticleImage = (imageUrl: string) => {
+    const particleImage = new ParticleImage(
+      imageUrl,
+      // attributes.colorMapping,
+      // attributes.color,
+      // attributes.backgroundColor,
+      // attributes.colorAlpha,
+      // attributes.density,
+      // attributes.maxParticleSize
+    );
+    return particleImage;
+  }
+
+
+  const loadImageData = () => {
+    
+    // Function to load an image and return a promise
+    const loadImage = (url: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = (error) => reject(error);
+          img.src = url;
+      });
+    };
+
+    // Load all images and store them in state
+    Promise.all(particleImages.map(particleImage => loadImage(particleImage.src)))
+      .then(loadedImages => {
+        setBgImages(loadedImages);
+        callDrawImageToBackground();
+      })
+      .catch(error => {
+          console.error("Failed to load images", error);
+      });
+  }
+
+  const callDrawImageToBackground = () => {
+    console.log(particleImages);
+    for(let i=0;i<particleImages.length;i++) {
+      drawImageToBackground(i);
+    } 
+  }
+
+  // Draw images once they are loaded
+  const drawImageToBackground = (index: number) =>{
+    console.log("calling draw image to background");
+    // var imageIndex = (index2 == null) ? this.bgImage[index] : this.bgImage[index][index2];
+
+    const bgImage = bgImages[index];
+    var particleImage = particleImages[index]
+
+    var newWidth, newHeight;
+
+    // TODO: worry about rezie later
+    // var userResized = resize;
+
+    // TODO: worry about heightDiff later. For now keep static.
+    // var heightDiff = (Nodes.textPosition == 'bottom' && Nodes.textPositionH == 'center') ? $(Nodes.canvasID).parents($selector).find('.inner-wrap').height()/1.3 + 50 : 0;
+    var heightDiff = 25;
+
+    // TODO: come up with better logic for if canvasBg is null
+    if(canvas == null || canvasBg == null || ctx == null){
+      throw new Error("Canvas BG is null");
+    }
+
+    if(canvasBg.height < 650) heightDiff = heightDiff/2;
+    
+    // If the image is too big for the screen... scale it down.
+    if ( bgImage.width > canvasBg.width - 50 - heightDiff || bgImage.height > canvasBg.height - 50 - heightDiff) {
+      
+      var maxRatio = Math.max( bgImage.width / (canvasBg.width - 50 ) , bgImage.height / (canvasBg.height - 100 - heightDiff) );
+      
+      newWidth = bgImage.width / maxRatio;
+      newHeight = bgImage.height / maxRatio;
+      
+      
+      //change density based on ratio
+      if(canvasBg.width < 1600) {
+        if(maxRatio > 3 && maxRatio <= 4) {
+          particleImage.density = particleImage.densityOriginal-3;
+          if(particleImage.maxParticleSize >= 3) particleImage.maxParticleSize = particleImage.maxParticleSizeOriginal-1;
+          
+        }
+        else if(maxRatio > 4) {
+          if(canvasBg.width > 800)particleImage.density = particleImage.densityOriginal-4;
+          else particleImage.density = particleImage.densityOriginal-5;
+          
+          if(particleImage.maxParticleSize > 2) particleImage.maxParticleSize = 2;
+        } else if (maxRatio <= 3){
+          particleImage.density = particleImage.densityOriginal;
+          particleImage.maxParticleSize = particleImage.maxParticleSizeOriginal;
+          
+        }
+      } else {
+
+        particleImage.density = particleImage.densityOriginal;
+        particleImage.maxParticleSize = particleImage.maxParticleSizeOriginal;
+      }
+      
+      
+    } else {
+      newWidth = bgImage.width;
+      newHeight = bgImage.height;
+    }
+    
+    // Draw to background canvas
+    // TODO: figure out headerHeight later
+    // var headerHeight = ($('#header-outer[data-transparent-header="true"]').length > 0 && $('body.mobile').length == 0 || $('#header-outer[data-permanent-transparent="1"]').length > 0) ? 0 : $('#header-outer').height();
+    var headerHeight = 0;
+
+    ctx.drawImage( bgImage, (canvas.width - newWidth) / 2, (((canvas.height+headerHeight/2) - newHeight - heightDiff*1) / 2) , newWidth, newHeight);
+    setCanvsBgCtxPixelData(ctx.getImageData( 0, 0, canvasBg.width, canvasBg.height ));
+    // canvasHeight: number, canvasWidth: number, bgContextPixelData: ImageData
+    if(canvsBgCtxPixelData == null){
+      throw new Error("canvsBgCtxPixelData is null");
+    }
+    particleSystem.prepareParticles(canvas.height,canvas.width, canvsBgCtxPixelData);
+  }
+
+  const draw = () => {
+    if (ctx && canvas) {
+       // Animation logic
+        const id = requestAnimationFrame(draw);
+        setAnimationId(id);
+        
+        //throttle fps to 60
+        setNow(Date.now());
+        if(now != null){
+            setElapsed(now-then);
+        }
+        
+        // Nodes.elapsed = Nodes.now - Nodes.then;
+        if (elapsed > 16.666 && now) {
+            setThen(now - (elapsed % 16.666))
+            
+            // If top of page is visible
+            if(!isOutOfSight) {
+                clear(ctx, canvas);
+                // TODO: need to figure out loaded logic.
+                particleSystem.updatePoints(mousePosition, true, false, imageIndex, canvas.width, canvas.height);
+                particleSystem.drawPoints(ctx, imageIndex);
+            }
+        }
+    }
+  };
+
+  const particleRotateLogic = (seek: number) => {
+    //clear current timeout incase seeked
+    if(timeoutHolder.current!=null){
+        clearTimeout(timeoutHolder.current);
+    }
+    
+    
+    //chance for random movement or next shape
+    // var explodeChance = (disableExplosion == 'on') ? 0 : 0.4;
+    var explodeChance = 0.4;
+
+    var timeoutInterval;
+      
+    if(Math.random() > explodeChance || seek !== 0) {
+      
+      // TODO: this seek logic doesnt make any sense to me? was a boolean but maybe it is just a clever way of expressing it as 0
+      // RIGHTTTTTT. Seek is selecting a particular image to set
+      // if(seek !== 0) {
+      //   setPrevShapeIndex(currentShapeIndex)
+      //   // prevShapeIndex = currentShapeIndex;
+      //   setCurrentShapeIndex(seek);
+      //   // Nodes.currentShapeIndex = seek; 
+      // } else {
+      setImageIndex(imageIndex+1 == particleImages.length ? 0 : imageIndex+1)
+      // }
+      
+      
+      
+      //update pagination
+    //   TODO: revisit this. Might need to solve pagination
+    //   var $selector = ($('.nectar-box-roll').length > 0) ? '.nectar-box-roll': '.nectar-particles';
+    //   if($(Nodes.canvasID).parents($selector).find('.pagination-navigation').length > 0 && seek == false) {
+    //     setTimeout( function(){ 
+    //       $(Nodes.canvasID).parents($selector).find('.pagination-dot').eq(Nodes.currentShapeIndex).trigger('click'); 
+    //     },$paginationTimeout);
+    //   }
+      
+      timeoutInterval = rotateTimer;
+
+      timeoutHolder.current = setTimeout( function(){ particleRotateLogic(0); }, timeoutInterval);
+      
+    } else {
+      timeoutInterval = 2800;
+      timeoutHolder.current = setTimeout( function(){ particleRotateLogic(0); }, timeoutInterval);
+      
+      particleSystem.setRandomMovement(true);
+      particleSystem.setImpulsX(Math.random()*600-300);
+      particleSystem.setImpulsY(-Math.random()*300);
+
+      particleSystem.setPointsRandom()
+      
+    }
+    // TODO: implement
+    updateCanvasBgColor(); 
+  }
+
+  const updateCanvasBgColor = () => {
+    // TODO: set background color to the background color specified in the imgsToDrawArray at the CurrentShape index
+    // jQuery(Nodes.canvasID).parents('.nectar-particles').find('.canvas-bg').css({
+    //   'background-color': Nodes.imgsToDraw[Nodes.currentShapeIndex].backgroundColor
+    // });
+  }
+
+  const particlesRotate = (skipInitialDelay: boolean) => {
+    var initTimeOut = (skipInitialDelay == true) ? 0 : 800;
+    
+    setTimeout(function(){ 
+      
+      var timeoutInterval = (loaded == false) ? rotateTimer + 1000 : rotateTimer;
+      
+      setLoaded(true);
+        // TOOD: Setting loaded attribute on canvas
+      //   setTimeout(function(){ $(Nodes.canvasID).attr('data-loaded','true'); }, 1000);
+        
+        if(particleImages.length > 1) timeoutHolder.current = (setTimeout( function(){ 
+          // 0 = false boolean
+          particleRotateLogic(0); 
+        }, timeoutInterval));
+        
+        updateCanvasBgColor();
+        // TODO: need to be able to do this without passing canvasId
+        initTextEffect();
+        
+        
+      }, initTimeOut);
+      
+      // TOOD: look to implement this later
+      //fadeout loading animation
+      // if(skipInitialDelay != true) {
+      //   $('#ajax-loading-screen').stop().transition({'opacity':0},1000,function(){ 
+      //     $(this).css({'display':'none'}); 
+      //   }); 
+      //   $('#ajax-loading-screen .loading-icon').transition({'opacity':0},1000); 
+      // }
+  }
+
+  const initTextEffect = () => {
+    // TODO: bunch of dynamic CSS changes
+
+    // if($(canvasID).parents('#page-header-bg').hasClass('topBoxIn')) {
+    //     return false;
+    //   }
+      
+    //   var $timeOut = ($(canvasID).parents('#page-header-bg[data-text-effect="rotate_in"]').length > 0) ? 800 : 0;
+    //   setTimeout(function(){
+    //     $(canvasID).parents($selector).find('.inner-wrap.shape-1').css('z-index',100);
+    //     $(canvasID).parents($selector).find('.inner-wrap.shape-1 .top-heading').transition({'opacity':1, 'y': 0},0);
+        
+    //     $(canvasID).parents($selector).find('.span_6').find('.wraped').each(function(i){
+    //       $(this).find('span').delay(i*370).transition({ rotateX: '0', 'opacity' : 1, y: 0},400,'easeOutQuad');
+    //     });
+        
+    //     setTimeout(function(){
+          
+    //       $(canvasID).parents($selector).find('.span_6').find('.inner-wrap.shape-1 > *:not(.top-heading)').each(function(i){
+    //         $(this).delay(i*370).transition({ rotateX: '0', 'opacity' : 1, y: 0 },650,'easeOutQuad');
+    //       });
+          
+    //       setTimeout(function(){
+    //         $('.scroll-down-wrap').removeClass('hidden');
+            
+    //         if( Nodes.imgsToDraw.length > 1) {
+    //           $('.pagination-dots .pagination-dot').each(function(i){
+    //             $(this).delay(i*75).transition({ y: 0, 'opacity': 1}, 400);
+    //           });
+    //           $('.pagination-navigation .pagination-current').each(function(i){
+    //             $(this).delay(i*75).transition({ y: 0, 'opacity': 1, scale: 1.15}, 400);
+    //           });
+              
+    //           //init pag
+    //           setTimeout(function(){
+    //             initGooPagination();
+    //           },$(canvasID).parents($selector).find('.pagination-dot').length*75 +370);
+    //         }
+            
+    //       }, $(canvasID).parents($selector).find('.inner-wrap.shape-1 > *:not(.top-heading)').length-1 * 400 + 370);
+          
+    //     }, ($(canvasID).parents($selector).find('.span_6').find('.wraped').length * 370));
+        
+    //   },$timeOut);
+  }
+
+  // Effect for canvas initialization and drawing
+  useEffect(() => {
+    draw(); // Start the drawing loop
+    return () => {
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [backgroundColor, imageIndex, windowSize, isOutOfSight]); // Redraw when these props or visibility change
+
+  // Example useEffect to simulate visibility change - replace with your actual visibility logic
+  useEffect(() => {
+    // Placeholder for visibility logic, could be a scroll or resize event listener
+    const toggleVisibility = () => {
+      // Toggle based on your conditions
+      setIsOutOfSight(prev => !prev);
+    };
+
+    // Simulate visibility change every 5 seconds as an example
+    const visibilityInterval = setInterval(toggleVisibility, 5000);
+
+    return () => clearInterval(visibilityInterval);
+  }, []);
+
+  return (
+    <div className="canvas-bg" style={{ backgroundColor: backgroundColor }}>
+        <canvas id="canvas" ref={canvasRef} data-active-index={imageIndex.toString()} style={{ width: '100%', height: '100%' }}></canvas>
+        <canvas id="bg-canvas" ref={canvasBgRef}  style={{ width: '100%', height: '100%' }}></canvas>
+    </div>
+  );
+};
+
+export default ParticleCanvas;
