@@ -49,10 +49,12 @@ export default function PlayerCircle({
     >(null);
 
     const handlePlayerDrag = (e: Konva.KonvaEventObject<MouseEvent>) => {
+        console.log(lines);
         const newEnd = e.target.position();
         setOrigin(newEnd);
         initialOrigin.current = e.target.position();
         if (rootConnector.childId != null) {
+            console.log("root connector not null");
             const childId = rootConnector.childId;
             setLines((prev) => {
                 const updatedLines = updateLineInMap(prev, childId, {
@@ -113,7 +115,8 @@ export default function PlayerCircle({
             drawLineInfo.selectedId != null
         ) {
             const { coords, selectedId } = drawLineInfo;
-
+            console.log("printing drawLineInfo");
+            console.log(drawLineInfo);
             setLines((prev) => {
                 let [updatedLines, newLineId] = addLineToMap(
                     prev,
@@ -140,9 +143,11 @@ export default function PlayerCircle({
                         childId: newLineId, // Update only the childId property
                     }));
                 }
+                console.log("updatedLines");
                 console.log(updatedLines);
                 return updatedLines;
             });
+            console.log(lines);
         }
     }, [drawLineInfo]);
 
@@ -190,21 +195,22 @@ export default function PlayerCircle({
                 onDragMove={handlePlayerDrag}
                 onMouseDown={onMouseDown}
             />
-            {Array.from(lines.values()).map((line) => (
-                <DrawLine
-                    key={line.id}
-                    {...line}
-                    lineData={line}
-                    // consider changing this function to propagate line changes
-                    onLineChange={(updatedLine) => {
-                        setLines((prev) => {
-                            const newLines = new Map(prev);
-                            newLines.set(updatedLine.id, updatedLine); // Update the specific line in the map
-                            return newLines;
-                        });
-                    }}
-                />
-            ))}
+            {Array.from(lines.values()).map((line) => {
+                return (
+                    <DrawLine
+                        key={line.id}
+                        lineData={line}
+                        onLineChange={(updatedLine) => {
+                            console.log("in callback");
+                            setLines((prev) => {
+                                const newLines = new Map(prev);
+                                newLines.set(updatedLine.id, updatedLine); // Update the specific line in the map
+                                return newLines;
+                            });
+                        }}
+                    />
+                );
+            })}
         </>
     );
 }
