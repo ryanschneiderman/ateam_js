@@ -5,12 +5,18 @@ import { Context } from "konva/lib/Context"; // Type for context
 import { ControlPoint, LineType, Point, Connector } from "./types";
 import LineEnd from "@/components/PlayDiagramming/LineEnd";
 import { Shape as KonvaShape } from "konva/lib/Shape"; // Type for shape
+import { calculateLineEndAngle, getAnchorCoords } from "./utilities";
+
 // import { Line } from "konva/lib/shapes/Line";
 
 export default function DrawLine({
     onLineChange,
+    onLineSelect,
+    onLineDrag,
     lineData: lLineData,
 }: {
+    onLineSelect: (lineId: string) => void;
+    onLineDrag: (lineId: string) => void;
     onLineChange: (line: LineType) => void;
     lineData: LineType;
 }) {
@@ -24,6 +30,7 @@ export default function DrawLine({
     const handleEndDrag = (e: Konva.KonvaEventObject<MouseEvent>) => {
         const newEnd = e.target.position();
         updatePositions(newEnd, true); // Rotate around B
+        onLineDrag(lineData.id);
     };
 
     // Handle drag movement of vertex A
@@ -71,11 +78,18 @@ export default function DrawLine({
             fixedPoint.y +
             (lineData.control.x - fixedPoint.x) * Math.sin(angleDelta) * scale +
             (lineData.control.y - fixedPoint.y) * Math.cos(angleDelta) * scale;
+
+        const controlPoint = { x: newCx, y: newCy };
+        const angle = calculateLineEndAngle(newPoint, controlPoint);
+        const anchorCoords = getAnchorCoords(newPoint.x, newPoint.y, angle, 90);
+        console.log("printing anchor coords");
+        console.log(anchorCoords);
         // Update state
         setLineData((prev) => ({
             ...prev,
-            control: { x: newCx, y: newCy },
+            control: controlPoint,
             end: movingEnd ? newPoint : prev.end,
+            endAnchor: movingEnd ? anchorCoords : prev.endAnchor,
         }));
         setAnchorAngle();
     };
@@ -92,10 +106,17 @@ export default function DrawLine({
         return angle;
     };
 
-    interface Point {
-        x: number;
-        y: number;
-    }
+    const selectLine = () => {
+        setLineData((prev) => ({
+            ...prev,
+            selected: true,
+        }));
+        onLineChange(lineData);
+    };
+
+    useEffect(() => {
+        onLineChange(lineData);
+    }, [lineData.end]);
 
     useEffect(() => {
         if (lLineData.origin != initialOrigin.current) {
@@ -109,12 +130,18 @@ export default function DrawLine({
     }, [lLineData.origin]);
 
     useEffect(() => {
+        setLineData(lLineData);
+    }, [lLineData.selected]);
+
+    useEffect(() => {
         setAnchorAngle();
     });
 
     return (
         <>
             <Shape
+                id={lineData.id}
+                circleId={lineData.circleId}
                 stroke={lineData.fill}
                 strokeWidth={2}
                 sceneFunc={(ctx: Context, shape: KonvaShape) => {
@@ -128,29 +155,62 @@ export default function DrawLine({
                     );
                     ctx.fillStrokeShape(shape);
                 }}
+                onMouseEnter={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "pointer";
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "default";
+                    }
+                }}
+                onClick={() => {
+                    onLineSelect(lineData.id);
+                }}
             />
 
             <Line
+                id={lineData.id}
+                circleId={lineData.circleId}
                 points={[
                     lineData.origin.x,
                     lineData.origin.y,
                     lineData.end.x,
                     lineData.end.y,
                 ]}
-                stroke={lineData.fill}
+                stroke="transparent"
+                strokeWidth={20}
+                dash={[5, 5]}
+                onMouseEnter={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "pointer";
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "default";
+                    }
+                }}
+                onClick={() => {
+                    onLineSelect(lineData.id);
+                }}
+            />
+
+            <Line
+                points={[
+                    lineData.origin.x,
+                    lineData.origin.y,
+                    lineData.control.x,
+                    lineData.control.y,
+                ]}
+                stroke="transparent"
+                dash={[5, 5]}
                 strokeWidth={1}
-                dash={[5, 5]}
-            />
-
-            <Line
-                points={[
-                    lineData.origin.x,
-                    lineData.origin.y,
-                    lineData.control.x,
-                    lineData.control.y,
-                ]}
-                stroke="grey"
-                dash={[5, 5]}
             />
             <Line
                 points={[
@@ -159,7 +219,8 @@ export default function DrawLine({
                     lineData.control.x,
                     lineData.control.y,
                 ]}
-                stroke="grey"
+                stroke="transparent"
+                strokeWidth={1}
                 dash={[5, 5]}
             />
 
@@ -168,19 +229,27 @@ export default function DrawLine({
                 x={lineData.control.x}
                 y={lineData.control.y}
                 radius={5}
-                fill="red"
+                fill={lineData.selected ? "red" : "transparent"}
                 draggable
                 onDragMove={(e) => {
+                    const control = { x: e.target.x(), y: e.target.y() };
+                    const angle = calculateLineEndAngle(lineData.end, control);
+                    const anchorCoords = getAnchorCoords(
+                        lineData.end.x,
+                        lineData.end.y,
+                        angle,
+                        90
+                    );
                     setLineData((prev) => ({
                         ...prev,
-                        control: { x: e.target.x(), y: e.target.y() },
+                        control: control,
+                        endAnchor: anchorCoords,
                         dragging: true,
                     }));
-                    initialControl.current = {
-                        x: e.target.x(),
-                        y: e.target.y(),
-                    };
+                    initialControl.current = control;
                     setAnchorAngle();
+                    onLineDrag(lineData.id);
+                    // onLineChange(lineData);
                 }}
                 onDragEnd={(e) => {
                     // Update initial control when manually moved
@@ -192,6 +261,9 @@ export default function DrawLine({
                     }));
                     onLineChange(lineData);
                 }}
+                onMouseDown={() => {
+                    onLineSelect(lineData.id);
+                }}
             />
 
             <LineEnd
@@ -201,16 +273,35 @@ export default function DrawLine({
                 fill={lineData.fill}
                 stroke={"black"}
                 rotation={lineEndAngle}
+                selected={lineData.selected}
+                onLineEndSelect={() => {
+                    onLineSelect(lineData.id);
+                }}
             />
 
             {/* End point */}
             <Circle
                 x={lineData.end.x}
                 y={lineData.end.y}
-                radius={5}
+                radius={15}
                 draggable
                 onDragMove={handleEndDrag}
                 onDragEnd={() => onLineChange(lineData)}
+                onMouseEnter={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "move";
+                    }
+                }}
+                onMouseLeave={(e) => {
+                    const container = e.target.getStage()?.container();
+                    if (container) {
+                        container.style.cursor = "default";
+                    }
+                }}
+                onClick={() => {
+                    onLineSelect(lineData.id);
+                }}
             />
         </>
     );

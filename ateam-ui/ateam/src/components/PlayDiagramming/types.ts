@@ -19,6 +19,7 @@ export interface LineType {
     fill: string;
     selected: boolean;
     connector: Connector | null;
+    endAnchor: { x: number; y: number };
 }
 
 export interface DrawLineInfo {
@@ -29,4 +30,28 @@ export interface DrawLineInfo {
 export interface Connector {
     parentId: string | null;
     childId: string | null;
+}
+
+export interface CircleData {
+    key: number;
+    selected: boolean;
+    selectedLine: string | null;
+    x: number;
+    y: number;
+    ref: React.RefObject<any>;
+    dragging?: boolean;
+    fill: string;
+    drawLineInfo: DrawLineInfo | null;
+}
+
+export interface PlayerCircleData {
+    key: number;
+    selected: boolean;
+    selectedLine: string | null;
+    x: number;
+    y: number;
+    ref: React.RefObject<any>;
+    dragging?: boolean;
+    fill: string;
+    drawLineInfo: DrawLineInfo | null;
 }

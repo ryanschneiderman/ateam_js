@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Stage, Layer, Line, Circle, RegularPolygon } from "react-konva";
-import Konva from "konva";
-import { ControlPoint, LineType, Point } from "./types";
+import React, { useState, useEffect } from "react";
+import { Circle, RegularPolygon } from "react-konva";
 
 export default function LineEnd({
     x,
@@ -10,6 +8,8 @@ export default function LineEnd({
     fill,
     rotation,
     stroke,
+    selected,
+    onLineEndSelect,
 }: {
     x: number;
     y: number;
@@ -17,7 +17,38 @@ export default function LineEnd({
     fill: string;
     rotation: number;
     stroke: string;
+    selected: boolean;
+    onLineEndSelect: () => void;
 }) {
+    // TODO: eventually move this to the DrawLine component
+    const calculateOffsets = (x: number, y: number, rotation: number) => {
+        console.log("in offsets");
+        console.log({ x: x, y: y, rotation: rotation });
+        const offsetDistance = 12;
+        const theta = ((rotation - angle) * Math.PI) / 180;
+        const xOffset = x + offsetDistance * Math.cos(theta);
+        const yOffset = y + offsetDistance * Math.sin(theta);
+        return { xOffset, yOffset };
+    };
+
+    const { xOffset: initialXOffset, yOffset: initialYOffset } =
+        calculateOffsets(x, y, rotation);
+
+    const [xOffset, setXOffset] = useState<number>(initialXOffset);
+    const [yOffset, setYOffset] = useState<number>(initialYOffset);
+
+    const setLineEndAnchor = () => {
+        const { xOffset, yOffset } = calculateOffsets(x, y, rotation);
+        setXOffset(xOffset);
+        setYOffset(yOffset);
+        console.log("in line end!");
+        console.log({ x: xOffset, y: yOffset });
+    };
+
+    useEffect(() => {
+        setLineEndAnchor();
+    }, [x, y, rotation]);
+
     return (
         <>
             {/* End point */}
@@ -30,6 +61,21 @@ export default function LineEnd({
                 strokeWidth={1}
                 rotation={rotation}
                 fill={fill}
+                onClick={() => {
+                    onLineEndSelect;
+                }}
+            />
+            {/* Anchor Point */}
+            <Circle
+                x={xOffset}
+                y={yOffset}
+                radius={3}
+                fill={selected ? fill : "transparent"}
+                stroke={selected ? fill : "transparent"}
+                strokeWidth={1}
+                onClick={() => {
+                    onLineEndSelect;
+                }}
             />
         </>
     );
