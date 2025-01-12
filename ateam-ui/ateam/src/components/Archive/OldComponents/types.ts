@@ -20,9 +20,10 @@ export interface LineType {
     selected: boolean;
     connector: Connector | null;
     endAnchor: { x: number; y: number };
+    lineEndAngle: number;
 }
 
-export interface DrawLineInfo {
+export interface LineToDraw {
     coords: Point | null;
     selectedId: string;
 }
@@ -41,17 +42,30 @@ export interface CircleData {
     ref: React.RefObject<any>;
     dragging?: boolean;
     fill: string;
-    drawLineInfo: DrawLineInfo | null;
+    lineToDraw: LineToDraw | null;
 }
 
 export interface PlayerCircleData {
+    id: string;
     key: number;
     selected: boolean;
     selectedLine: string | null;
-    x: number;
-    y: number;
+    origin: Point;
     ref: React.RefObject<any>;
     dragging?: boolean;
     fill: string;
-    drawLineInfo: DrawLineInfo | null;
+    lineToDraw: LineToDraw | null;
+    lines: Map<string, LineData>;
+}
+
+export interface LineData {
+    id: string;
+    circleId: string;
+    origin: { x: number; y: number };
+    control: { x: number; y: number };
+    end: { x: number; y: number };
+    fill: string;
+    selected: boolean;
+    connector: Connector | null;
+    endAnchor: { x: number; y: number };
 }

@@ -1,5 +1,5 @@
 "use client";
-import Index from "@/components/PlayDiagramming/Index";
+import PlayDiagrammingApp from "@/components/PlayDiagramming/PlayDiagrammingApp";
 import _ from "lodash";
 import { useStrictMode } from "react-konva";
 import React from "react";
@@ -7,7 +7,7 @@ import React from "react";
 useStrictMode(true);
 
 const Home = () => {
-    return <Index />;
+    return <PlayDiagrammingApp />;
 };
 
 export default Home;

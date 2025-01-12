@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Line, Circle, Shape } from "react-konva";
 import Konva from "konva";
 import { Context } from "konva/lib/Context"; // Type for context
-import { ControlPoint, LineType, Point, Connector } from "./types";
+import { ControlPoint, LineData, Point, Connector } from "./types";
 import LineEnd from "@/components/PlayDiagramming/LineEnd";
 import { Shape as KonvaShape } from "konva/lib/Shape"; // Type for shape
 import { calculateLineEndAngle, getAnchorCoords } from "./utilities";
@@ -13,18 +13,25 @@ export default function DrawLine({
     onLineChange,
     onLineSelect,
     onLineDrag,
+<<<<<<< HEAD:ateam-ui/ateam/src/components/PlayDiagramming/DrawLine.tsx
     lineData: lLineData,
 }: {
     onLineSelect: (lineId: string) => void;
     onLineDrag: (lineId: string) => void;
     onLineChange: (line: LineType) => void;
     lineData: LineType;
+=======
+    lineData: lineData,
+}: {
+    onLineSelect: (lineId: string) => void;
+    onLineDrag: (lineId: string) => void;
+    onLineChange: (line: LineData) => void;
+    lineData: LineData;
+>>>>>>> eb976a8 (use context):ateam-ui/ateam/src/components/Archive/OldComponents/DrawLine.tsx
 }) {
-    const [lineData, setLineData] = useState<LineType>(lLineData);
+    // const [lineData, setLineData] = useState<LineData>(lLineData);
     const initialControl = useRef<ControlPoint>(lineData.control);
     const initialOrigin = useRef<ControlPoint>(lineData.origin);
-
-    const [lineEndAngle, setLineEndAngle] = useState<number>(0);
 
     // Handle drag movement of vertex A
     const handleEndDrag = (e: Konva.KonvaEventObject<MouseEvent>) => {
