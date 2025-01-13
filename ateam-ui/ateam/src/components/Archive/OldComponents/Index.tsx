@@ -1,10 +1,11 @@
 import PlayerCircle from "@/components/PlayDiagramming/PlayerCircle";
+import PlayLine from "@/components/PlayDiagramming/PlayLine";
 import Konva from "konva";
 import _ from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { Layer, Stage, useStrictMode } from "react-konva";
 import { updateCircleInMap } from "./utilities";
-import { CircleData, Point } from "./types";
+import { CircleData, Point, PlayerCircleData, LineData } from "./types";
 import React from "react";
 
 const DEFAULT_Y_PLAYER_SPACING = 65;
@@ -18,21 +19,51 @@ export default function Index() {
     >(null);
     const [isDrawingLine, setIsDrawingLine] = useState(false);
 
-    const [playerCircles, setPlayerCircles] = useState<Map<string, CircleData>>(
-        new Map<string, CircleData>(
+    // const [state, setState] = useState({
+    //     players: new Map<string, PlayerCircleData>(),
+    //     selectedId: null, // Tracks the currently selected player or line
+    //   });
+
+    // const [playerCircles, setState] = useState<Map<string, CircleData>>(
+    //     new Map<string, CircleData>(
+    //         Array.from({ length: 5 }, (_, i) => {
+    //             const id = `circle-${i}`;
+    //             return [
+    //                 id,
+    //                 {
+    //                     key: i,
+    //                     selected: false,
+    //                     selectedLine: null,
+    //                     x: 40,
+    //                     y: i * DEFAULT_Y_PLAYER_SPACING + DEFAULT_Y_OFFSET,
+    //                     ref: React.createRef(),
+    //                     fill: "#005bff",
+    //                     lineToDraw: null,
+    //                 },
+    //             ];
+    //         })
+    //     )
+    // );
+
+    const [state, setState] = useState<Map<string, PlayerCircleData>>(
+        new Map<string, PlayerCircleData>(
             Array.from({ length: 5 }, (_, i) => {
                 const id = `circle-${i}`;
                 return [
                     id,
                     {
+                        id: id,
                         key: i,
                         selected: false,
                         selectedLine: null,
-                        x: 40,
-                        y: i * DEFAULT_Y_PLAYER_SPACING + DEFAULT_Y_OFFSET,
+                        origin: {
+                            x: 40,
+                            y: i * DEFAULT_Y_PLAYER_SPACING + DEFAULT_Y_OFFSET,
+                        },
                         ref: React.createRef(),
                         fill: "#005bff",
-                        drawLineInfo: null,
+                        lineToDraw: null,
+                        lines: new Map<string, LineData>(),
                     },
                 ];
             })
@@ -40,8 +71,8 @@ export default function Index() {
     );
 
     const updateCircle = (circleId: string, newData: Partial<CircleData>) => {
-        setPlayerCircles((prevCircles) => {
-            const newCircles = new Map(prevCircles); // Create a new Map for immutability
+        setState((prevState) => {
+            const newCircles = new Map(prevState); // Create a new Map for immutability
             const circle = newCircles.get(circleId);
             if (circle) {
                 newCircles.set(circleId, { ...circle, ...newData }); // Update the specific circle
@@ -67,14 +98,14 @@ export default function Index() {
                 y: y,
             };
             updateCircle(selectedParentCircleId, {
-                drawLineInfo: { coords, selectedId: selectedId },
+                lineToDraw: { coords, selectedId: selectedId },
             });
             setIsDrawingLine(false); // Reset line drawing mode
         }
     };
 
     const deselectPlayerLine = (selectedId: string) => {
-        setPlayerCircles((prev) => {
+        setState((prev) => {
             const updatedCircles = updateCircleInMap(prev, selectedId, {
                 selected: false,
                 selectedLine: null,
@@ -85,7 +116,7 @@ export default function Index() {
 
     const handleSelection = (circleId: string, lineId: string | null) => {
         if (lineId != null) {
-            setPlayerCircles((prev) => {
+            setState((prev) => {
                 const updatedCircles = updateCircleInMap(prev, circleId, {
                     selectedLine: lineId,
                 });
@@ -94,7 +125,7 @@ export default function Index() {
             setSelectedId(lineId);
             setSelectedParentCircleId(circleId);
         } else {
-            setPlayerCircles((prev) => {
+            setState((prev) => {
                 const updatedCircles = updateCircleInMap(prev, circleId, {
                     selected: true,
                 });
@@ -136,18 +167,16 @@ export default function Index() {
                     onPointerDown={handleStageClick}
                 >
                     <Layer ref={layerRef}>
-                        {Array.from(playerCircles.values()).map((circle, i) => (
+                        {Array.from(state.values()).map((circle, i) => (
                             <PlayerCircle
-                                key={`circle-${i}`}
-                                id={`circle-${i}`} // Assign a unique ID
+                                playerCircleData={circle}
+                                // key={circle.key}
+                                // id={circle.id} // Assign a unique ID
                                 animating={animating}
-                                fill={circle.fill}
                                 layer={layerRef}
-                                x={circle.x}
-                                y={circle.y}
-                                selected={circle.selected}
-                                selectedLine={circle.selectedLine}
-                                drawLineInfo={circle.drawLineInfo}
+                                // selected={circle.selected}
+                                // selectedLine={circle.selectedLine}
+                                // lineToDraw={circle.lineToDraw}
                                 onLineSelect={(selectedLineId) => {
                                     handleSelection(
                                         `circle-${i}`,
@@ -157,6 +186,16 @@ export default function Index() {
                                 onCircleSelect={() => {
                                     handleSelection(`circle-${i}`, null);
                                 }}
+                                onUpdate={(updatedPlayer) =>
+                                    setState((prev) => {
+                                        const newPlayers = new Map(prev);
+                                        newPlayers.set(
+                                            updatedPlayer.id,
+                                            updatedPlayer
+                                        );
+                                        return { ...prev, players: newPlayers };
+                                    })
+                                }
                             />
                         ))}
                     </Layer>

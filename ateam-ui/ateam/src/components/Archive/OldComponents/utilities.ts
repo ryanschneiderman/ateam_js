@@ -1,4 +1,4 @@
-import { LineType, Point, DrawLineInfo, Connector, CircleData } from "./types";
+import { LineData, Point, LineToDraw, Connector, CircleData } from "./types";
 
 /**
  * Updates a line in the map with new data.
@@ -8,10 +8,10 @@ import { LineType, Point, DrawLineInfo, Connector, CircleData } from "./types";
  * @returns A new Map with the updated line.
  */
 export const updateLineInMap = (
-    map: Map<string, LineType>,
+    map: Map<string, LineData>,
     id: string,
-    updates: Partial<LineType>
-): Map<string, LineType> => {
+    updates: Partial<LineData>
+): Map<string, LineData> => {
     const newMap = new Map(map);
     const line = newMap.get(id);
     if (line) {
@@ -68,13 +68,13 @@ export const updateCircleInMap = (
  * @returns A new Map with the added line.
  */
 export const addLineToMap = (
-    map: Map<string, LineType>,
+    map: Map<string, LineData>,
     circleId: string,
     origin: Point,
     coords: Point,
     parentId: string,
     fill: string
-): [Map<string, LineType>, LineType] => {
+): [Map<string, LineData>, LineData] => {
     const newMap = new Map(map);
     const lineId = `line-${newMap.size + 1}`;
     const control = {
@@ -83,7 +83,7 @@ export const addLineToMap = (
     };
     const angle = calculateLineEndAngle(coords, control);
     const anchorCoords = getAnchorCoords(coords.x, coords.y, angle, 90);
-    const newLine: LineType = {
+    const newLine: LineData = {
         id: lineId,
         circleId,
         origin,

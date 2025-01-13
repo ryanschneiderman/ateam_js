@@ -2,7 +2,13 @@ import Konva from "konva";
 import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Circle } from "react-konva";
 import DrawLine from "./DrawLine";
-import { LineType, Point, DrawLineInfo, Connector } from "./types";
+import {
+    LineData,
+    Point,
+    LineToDraw,
+    Connector,
+    PlayerCircleData,
+} from "./types";
 import { updateLineInMap, addLineToMap, isLine } from "./utilities";
 
 import { readyException } from "jquery";
@@ -11,37 +17,29 @@ const PLAYER_CIRCLE_RADIUS = 25;
 
 export default function PlayerCircle({
     animating,
-    fill,
-    x,
-    y,
     layer,
-    selected,
-    selectedLine,
-    id,
-    drawLineInfo,
+    playerCircleData,
     onLineSelect,
     onCircleSelect,
+    onUpdate,
 }: {
     animating: boolean;
-    fill: string;
-    x: number;
-    y: number;
     layer: RefObject<Konva.Layer | null>;
-    selected: boolean;
-    selectedLine: string | null;
-    id: string;
-    drawLineInfo: DrawLineInfo | null;
+    playerCircleData: PlayerCircleData;
     onLineSelect: (lineId: string) => void;
     onCircleSelect: () => void;
+    onUpdate: (playerCircleData: PlayerCircleData) => void;
 }) {
-    const [lines, setLines] = useState<Map<string, LineType>>(
-        new Map<string, LineType>()
+    const [lines, setLines] = useState<Map<string, LineData>>(
+        new Map<string, LineData>()
     );
 
-    const [origin, setOrigin] = useState<Point>({ x, y });
-    const initialOrigin = useRef<Point>(origin);
+    const initialOrigin = useRef<Point>(playerCircleData.origin);
+    const [localOrigin, setLocalOrigin] = useState<Point>(
+        playerCircleData.origin
+    );
     const [rootConnector, setRootConnector] = useState<Connector>({
-        parentId: id,
+        parentId: playerCircleData.id,
         childId: null,
     });
 
@@ -51,7 +49,8 @@ export default function PlayerCircle({
 
     const handlePlayerDrag = (e: Konva.KonvaEventObject<MouseEvent>) => {
         const newEnd = e.target.position();
-        setOrigin(newEnd);
+        // TODO: need to setState
+        // setOrigin(newEnd);
         initialOrigin.current = e.target.position();
         if (rootConnector.childId != null) {
             console.log("root connector not null");
@@ -63,6 +62,15 @@ export default function PlayerCircle({
                 return updatedLines;
             });
         }
+    };
+
+    const handleLineUpdate = (lineId: string, updates: Partial<LineData>) => {
+        const updatedLines = new Map(playerCircleData.lines);
+        const line = updatedLines.get(lineId);
+        if (line) {
+            updatedLines.set(lineId, { ...line, ...updates });
+        }
+        onUpdate({ ...playerCircleData, lines: updatedLines });
     };
 
     const handleLineDrag = (lineId: string) => {
@@ -102,7 +110,11 @@ export default function PlayerCircle({
                 if (t > 1) {
                     t = 1;
                     anim.stop();
-                    setTimeout(() => setOrigin(initialOrigin.current), 1000); // Reset after 1 second
+                    //
+                    setTimeout(
+                        () => setLocalOrigin(initialOrigin.current),
+                        1000
+                    ); // Reset after 1 second
                 }
 
                 const line = lines.get(childId);
@@ -116,7 +128,7 @@ export default function PlayerCircle({
                         (1 - t) * (1 - t) * initialOrigin.current.y +
                         2 * (1 - t) * t * line.control.y +
                         t * t * line.end.y;
-                    setOrigin({ x, y });
+                    setLocalOrigin({ x, y });
                 } else {
                     // TODO: use different exception?
                     throw new DOMException(
@@ -129,22 +141,20 @@ export default function PlayerCircle({
     };
 
     useEffect(() => {
-        console.log(id);
-        console.log(selected);
-    }, [selected]);
+        console.log(playerCircleData.id);
+        console.log(playerCircleData.selected);
+    }, [playerCircleData.selected]);
 
     useEffect(() => {
         if (
-            drawLineInfo != null &&
-            drawLineInfo.coords != null &&
-            drawLineInfo.selectedId != null
+            playerCircleData.lineToDraw != null &&
+            playerCircleData.lineToDraw.coords != null &&
+            playerCircleData.lineToDraw.selectedId != null
         ) {
-            const { coords, selectedId } = drawLineInfo;
-            console.log("printing drawLineInfo");
-            console.log(drawLineInfo);
+            const { coords, selectedId } = playerCircleData.lineToDraw;
 
             setLines((prev) => {
-                let newLineOrigin = origin;
+                let newLineOrigin = playerCircleData.origin;
                 if (isLine(selectedId)) {
                     const line = lines.get(selectedId);
                     if (line && line.origin) {
@@ -153,11 +163,11 @@ export default function PlayerCircle({
                 }
                 let [updatedLines, newLine] = addLineToMap(
                     prev,
-                    id,
+                    playerCircleData.id,
                     newLineOrigin,
                     coords,
                     selectedId,
-                    fill
+                    playerCircleData.fill
                 );
 
                 if (selectedId != null && isLine(selectedId)) {
@@ -180,11 +190,12 @@ export default function PlayerCircle({
                 return updatedLines;
             });
         }
-    }, [drawLineInfo]);
+    }, [playerCircleData.lineToDraw]);
 
     useEffect(() => {
         console.log("player circle line select change");
-        if (selectedLine != null) {
+        if (playerCircleData.selectedLine != null) {
+            const selectedLine = playerCircleData.selectedLine;
             setLines((prev) => {
                 let updatedLines = updateLineInMap(prev, selectedLine, {
                     selected: true,
@@ -203,7 +214,7 @@ export default function PlayerCircle({
                 return updatedLines;
             });
 
-            setCurrentSelectedLine(selectedLine);
+            setCurrentSelectedLine(playerCircleData.selectedLine);
         }
         // unselect line
         else {
@@ -226,7 +237,7 @@ export default function PlayerCircle({
                 console.log("current selected line is null");
             }
         }
-    }, [selectedLine]);
+    }, [playerCircleData.selectedLine]);
 
     const deselectLines = () => {};
 
@@ -274,13 +285,15 @@ export default function PlayerCircle({
                 );
             })}
             <Circle
-                id={id}
-                circleId={id}
-                x={origin.x}
-                y={origin.y}
+                id={playerCircleData.id}
+                circleId={playerCircleData.id}
+                x={localOrigin.x}
+                y={localOrigin.y}
                 radius={PLAYER_CIRCLE_RADIUS}
-                fill={fill}
-                stroke={selected ? "black" : fill}
+                fill={playerCircleData.fill}
+                stroke={
+                    playerCircleData.selected ? "black" : playerCircleData.fill
+                }
                 strokeWidth={3}
                 draggable
                 onDragMove={handlePlayerDrag}
