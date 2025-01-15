@@ -1,11 +1,5 @@
 import React, { createContext, useReducer, useContext } from "react";
-import {
-    LineData,
-    Point,
-    LineToDraw,
-    Connector,
-    PlayerCircleData,
-} from "../Common/types";
+import { LineData, Point, Connector, PlayerCircleData } from "../Common/types";
 import DrawLine from "@/components/Archive/OldComponents/DrawLine";
 
 export interface DiagramState {
@@ -14,7 +8,6 @@ export interface DiagramState {
     selectedParentCircleId: string | null;
     animating: boolean | null;
     drawLineSelected: boolean | null;
-    lineToDraw: LineToDraw | null;
 }
 
 const DEFAULT_Y_PLAYER_SPACING = 65;
@@ -39,6 +32,7 @@ const playerData = new Map<string, PlayerCircleData>(
                 fill: "#005bff",
                 lines: new Map<string, LineData>(),
                 connector: null,
+                lineToDraw: null,
             },
         ];
     })
@@ -51,7 +45,6 @@ const initialState: DiagramState = {
     selectedParentCircleId: null,
     animating: false,
     drawLineSelected: null,
-    lineToDraw: null,
 };
 
 export type DiagramAction =
@@ -78,8 +71,8 @@ export type DiagramAction =
     | { type: "DESELECT_ALL" }
     | { type: "ANIMATE_PLAY" }
     | { type: "STOP_ANIMATION" }
-    | { type: "SET_DRAWLINE_SELECTED"; payload: { set: boolean } }
-    | { type: "SET_LINE_TO_DRAW"; payload: { lineToDraw: LineToDraw } };
+    | { type: "SET_DRAWLINE_SELECTED"; payload: { set: boolean } };
+// | { type: "SET_LINE_TO_DRAW"; payload: { lineToDraw: Point } };
 
 // Reducer function
 const diagramReducer = (
@@ -245,9 +238,10 @@ const diagramReducer = (
         case "SET_DRAWLINE_SELECTED": {
             return { ...state, drawLineSelected: action.payload.set };
         }
-        case "SET_LINE_TO_DRAW": {
-            return { ...state, lineToDraw: action.payload.lineToDraw };
-        }
+        // case "SET_LINE_TO_DRAW": {
+
+        //     return { ...state, lineToDraw: action.payload.lineToDraw };
+        // }
         default:
             throw new Error("Unhandled action type");
     }
@@ -269,7 +263,6 @@ export const DiagramProvider: React.FC<{ children: React.ReactNode }> = ({
         selectedParentCircleId: null,
         animating: false,
         drawLineSelected: false,
-        lineToDraw: null,
     });
 
     return (

@@ -1,4 +1,4 @@
-import { LineData, Point, LineToDraw, Connector } from "../Common/types";
+import { LineData, Point, Connector } from "../Common/types";
 import { DiagramAction, DiagramState } from "../Context/DiagramContext";
 
 // General function to update positions

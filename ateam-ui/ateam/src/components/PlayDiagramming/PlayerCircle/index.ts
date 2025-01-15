@@ -1,10 +1,4 @@
-import {
-    LineData,
-    Point,
-    LineToDraw,
-    Connector,
-    PlayerCircleData,
-} from "../Common/types";
+import { LineData, Point, Connector, PlayerCircleData } from "../Common/types";
 import {
     calculateLineEndAngle,
     getAnchorCoords,
@@ -60,11 +54,7 @@ export const handleAddLine = (
     let newLineOrigin = null;
     let newLineId = null;
     let parentId = null;
-    if (
-        state.selectedId != null &&
-        state.lineToDraw != null &&
-        state.lineToDraw.coords
-    ) {
+    if (state.selectedId != null && playerCircleData.lineToDraw != null) {
         if (state.selectedParentCircleId) {
             const player = state.players.get(state.selectedParentCircleId);
             if (player != null) {
@@ -110,7 +100,7 @@ export const handleAddLine = (
                         newLineId,
                         player.id,
                         newLineOrigin,
-                        state.lineToDraw.coords,
+                        playerCircleData.lineToDraw,
                         parentId,
                         player.fill
                     );
