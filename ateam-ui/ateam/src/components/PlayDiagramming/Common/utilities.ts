@@ -1,4 +1,4 @@
-import { LineData, Point, LineToDraw, Connector } from "./types";
+import { LineData, Point, Connector } from "./types";
 
 export const calculateLineEndAngle = (
     endPoint: Point,

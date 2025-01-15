@@ -2,13 +2,7 @@ import React from "react";
 import { DiagramProvider } from "../Context/DiagramContext";
 import { RefObject, useEffect } from "react";
 import PlayerCircle from "../PlayerCircle/PlayerCircle";
-import {
-    LineData,
-    Point,
-    LineToDraw,
-    Connector,
-    PlayerCircleData,
-} from "../Common/types";
+import { LineData, Point, Connector, PlayerCircleData } from "../Common/types";
 import Konva from "konva";
 import { Layer, Stage, useStrictMode } from "react-konva";
 import { useRef, useState } from "react";
@@ -31,11 +25,11 @@ export default function Diagram() {
                 y: y,
             };
             dispatch({
-                type: "SET_LINE_TO_DRAW",
+                type: "UPDATE_PLAYER",
                 payload: {
-                    lineToDraw: {
-                        selectedId: state.selectedId,
-                        coords: coords,
+                    id: state.selectedParentCircleId,
+                    updates: {
+                        lineToDraw: coords,
                     },
                 },
             });

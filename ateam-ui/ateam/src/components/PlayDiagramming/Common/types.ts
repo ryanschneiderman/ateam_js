@@ -9,6 +9,7 @@ export interface PlayerCircleData {
     fill: string;
     lines: Map<string, LineData>;
     connector: Connector | null;
+    lineToDraw: Point | null;
 }
 
 // Define the extended type for control point
@@ -21,11 +22,6 @@ export interface ControlPoint {
 export interface Point {
     x: number;
     y: number;
-}
-
-export interface LineToDraw {
-    coords: Point | null;
-    selectedId: string;
 }
 
 export interface Connector {
